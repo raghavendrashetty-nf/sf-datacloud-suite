@@ -1,0 +1,117 @@
+{
+  "systems": {
+    "salesforce": {
+      "id": "salesforce",
+      "label": "Salesforce",
+      "color": "#00A1E0",
+      "icon": "SF",
+      "description": "Detect duplicate records on Salesforce objects using COUNT_DISTINCT for accuracy at any scale.",
+      "credentialFields": [
+        {
+          "key": "loginUrl",
+          "label": "Login URL",
+          "type": "url",
+          "default": "https://login.salesforce.com",
+          "required": true
+        },
+        {
+          "key": "username",
+          "label": "Username",
+          "type": "text",
+          "required": true,
+          "placeholder": "user@example.com"
+        },
+        {
+          "key": "password",
+          "label": "Password",
+          "type": "password",
+          "required": true,
+          "secret": true
+        },
+        {
+          "key": "securityToken",
+          "label": "Security Token",
+          "type": "password",
+          "required": true,
+          "secret": true,
+          "helper": "Appended to password."
+        }
+      ],
+      "endpoint": "/api/readiness/duplicate-check"
+    },
+    "zendesk": {
+      "id": "zendesk",
+      "label": "Zendesk",
+      "color": "#03363D",
+      "icon": "ZD",
+      "description": "Find duplicate values on Zendesk users/orgs via sampled pagination.",
+      "credentialFields": [
+        {
+          "key": "subdomain",
+          "label": "Subdomain",
+          "type": "text",
+          "required": true,
+          "placeholder": "your-company"
+        },
+        {
+          "key": "email",
+          "label": "Agent Email",
+          "type": "email",
+          "required": true
+        },
+        {
+          "key": "apiToken",
+          "label": "API Token",
+          "type": "password",
+          "required": true,
+          "secret": true
+        }
+      ],
+      "endpoint": "/api/readiness/duplicate-check"
+    },
+    "sharepoint": {
+      "id": "sharepoint",
+      "label": "SharePoint",
+      "color": "#0078D4",
+      "icon": "SP",
+      "description": "Detect duplicate items in SharePoint lists via Graph.",
+      "credentialFields": [
+        {
+          "key": "tenantId",
+          "label": "Tenant ID",
+          "type": "text",
+          "required": true
+        },
+        {
+          "key": "clientId",
+          "label": "Client (App) ID",
+          "type": "text",
+          "required": true
+        },
+        {
+          "key": "clientSecret",
+          "label": "Client Secret",
+          "type": "password",
+          "required": true,
+          "secret": true
+        },
+        {
+          "key": "siteId",
+          "label": "Site ID",
+          "type": "text",
+          "required": true,
+          "placeholder": "host,GUID,GUID"
+        }
+      ],
+      "endpoint": "/api/readiness/duplicate-check"
+    }
+  },
+  "checks": {
+    "duplicateCheck": {
+      "label": "Duplicate Check",
+      "enabled": true,
+      "defaultThreshold": 5,
+      "description": "Detect rows where a field value repeats. Salesforce uses COUNT_DISTINCT for exact counts at any table size; Zendesk and SharePoint sample."
+    }
+  }
+}

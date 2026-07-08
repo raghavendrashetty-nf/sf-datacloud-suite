@@ -1,0 +1,370 @@
+{
+  "meta": {
+    "sourceDocument": "Salesforce Data Cloud Platform Services Rate Sheet",
+    "sourceUrl": "https://www.salesforce.com/en-us/wp-content/uploads/sites/4/documents/platform/data-cloud-platform-services-rate-sheet.pdf",
+    "lastUpdatedISO": "2026-07-07",
+    "schemaVersion": "3.4.0",
+    "notes": "Editable via /credit-calculator/settings."
+  },
+  "flexCredit": {
+    "costPerCreditUSD": 0.005,
+    "note": "Base $/Flex Credit."
+  },
+  "environments": {
+    "Production": {
+      "id": "PROD",
+      "label": "Production",
+      "globalMultiplier": 1.0
+    },
+    "Sandbox": {
+      "id": "SBX",
+      "label": "Sandbox",
+      "globalMultiplier": 0.8
+    }
+  },
+  "frequencyPresets": {
+    "streaming": {
+      "label": "Streaming / Real-time",
+      "runsPerDay": 0,
+      "isContinuous": true
+    },
+    "hourly": {
+      "label": "Hourly",
+      "runsPerDay": 24,
+      "isContinuous": false
+    },
+    "every6h": {
+      "label": "Every 6 hours",
+      "runsPerDay": 4,
+      "isContinuous": false
+    },
+    "every12h": {
+      "label": "Every 12 hours",
+      "runsPerDay": 2,
+      "isContinuous": false
+    },
+    "daily": {
+      "label": "Daily",
+      "runsPerDay": 1,
+      "isContinuous": false
+    },
+    "weekly": {
+      "label": "Weekly",
+      "runsPerDay": 0.1428571,
+      "isContinuous": false
+    },
+    "batch": {
+      "label": "Batch (Manual/Ad-hoc)",
+      "runsPerDay": 0.033,
+      "isContinuous": false
+    },
+    "onDemand": {
+      "label": "On-demand (Live)",
+      "runsPerDay": 1,
+      "isContinuous": false
+    },
+    "triggered": {
+      "label": "Triggered/Scheduled",
+      "runsPerDay": 1,
+      "isContinuous": false
+    }
+  },
+  "phases": {
+    "ingestion": {
+      "label": "Connect, Harmonize & Unify",
+      "color": "#3B82F6",
+      "order": 1
+    },
+    "harmonization": {
+      "label": "Identity Resolution",
+      "color": "#8B5CF6",
+      "order": 2
+    },
+    "realtime": {
+      "label": "E2E Real-Time Processing",
+      "color": "#EF4444",
+      "order": 3
+    },
+    "insights": {
+      "label": "Analyze & Predict",
+      "color": "#10B981",
+      "order": 4
+    },
+    "act": {
+      "label": "Act",
+      "color": "#14B8A6",
+      "order": 5
+    },
+    "activation": {
+      "label": "Segmentation & Activation",
+      "color": "#F59E0B",
+      "order": 6
+    }
+  },
+  "rateSheet": {
+    "internalDataPipeline": {
+      "phase": "ingestion",
+      "label": "Internal Data Pipeline",
+      "unit": "Per 1M Rows Processed",
+      "unitDivisor": 1000000,
+      "credits": {
+        "Production": 0,
+        "Sandbox": 0
+      },
+      "applicableToInitialLoad": true,
+      "applicableToIncremental": true,
+      "tooltip": "Ingestion from Salesforce Core. Rate: 0 cr / 1M Rows Processed (Prod) - 0 cr (SBX)."
+    },
+    "externalBatchIngestion": {
+      "phase": "ingestion",
+      "label": "External Data Pipeline - Batch Ingestion",
+      "unit": "Per 1M Rows Processed",
+      "unitDivisor": 1000000,
+      "credits": {
+        "Production": 2000,
+        "Sandbox": 1600
+      },
+      "applicableToInitialLoad": true,
+      "applicableToIncremental": true,
+      "tooltip": "Batch ingestion (S3/Snowflake/DB/REST). Rate: 2,000 cr / 1M Rows Processed (Prod) - 1,600 cr (SBX)."
+    },
+    "externalStreamingIngestion": {
+      "phase": "ingestion",
+      "label": "External Data Pipeline - Streaming Ingestion",
+      "unit": "Per 1M Rows Processed",
+      "unitDivisor": 1000000,
+      "credits": {
+        "Production": 5000,
+        "Sandbox": 4000
+      },
+      "applicableToInitialLoad": false,
+      "applicableToIncremental": true,
+      "tooltip": "Real-time ingestion (Incremental only). Rate: 5,000 cr / 1M Rows Processed (Prod) - 4,000 cr (SBX)."
+    },
+    "batchDataTransforms": {
+      "phase": "ingestion",
+      "label": "Batch Data Transforms",
+      "unit": "Per 1M Rows Processed",
+      "unitDivisor": 1000000,
+      "credits": {
+        "Production": 400,
+        "Sandbox": 320
+      },
+      "applicableToInitialLoad": true,
+      "applicableToIncremental": true,
+      "tooltip": "DLO to DMO batch transforms. Rate: 400 cr / 1M Rows Processed (Prod) - 320 cr (SBX)."
+    },
+    "streamingDataTransforms": {
+      "phase": "ingestion",
+      "label": "Streaming Data Transforms",
+      "unit": "Per 1M Rows Processed",
+      "unitDivisor": 1000000,
+      "credits": {
+        "Production": 5000,
+        "Sandbox": 4000
+      },
+      "applicableToInitialLoad": false,
+      "applicableToIncremental": true,
+      "tooltip": "Continuous transforms (Incremental only). Rate: 5,000 cr / 1M Rows Processed (Prod) - 4,000 cr (SBX)."
+    },
+    "unstructuredDataProcessed": {
+      "phase": "ingestion",
+      "label": "Unstructured Data Processed",
+      "unit": "Per 1 MB Processed",
+      "unitDivisor": 1,
+      "credits": {
+        "Production": 60,
+        "Sandbox": 48
+      },
+      "applicableToInitialLoad": true,
+      "applicableToIncremental": true,
+      "tooltip": "PDFs/images/audio/video. Rate: 60 cr / 1 MB Processed (Prod) - 48 cr (SBX)."
+    },
+    "dataFederationRows": {
+      "phase": "ingestion",
+      "label": "Data Federation Rows Accessed",
+      "unit": "Per 1M Rows Accessed",
+      "unitDivisor": 1000000,
+      "credits": {
+        "Production": 70,
+        "Sandbox": 56
+      },
+      "applicableToInitialLoad": true,
+      "applicableToIncremental": true,
+      "tooltip": "Zero-copy access to external lakehouse. Rate: 70 cr / 1M Rows Accessed (Prod) - 56 cr (SBX)."
+    },
+    "dataShareRowsOut": {
+      "phase": "ingestion",
+      "label": "Data Share Rows Shared (Out)",
+      "unit": "Per 1M Rows Shared",
+      "unitDivisor": 1000000,
+      "credits": {
+        "Production": 800,
+        "Sandbox": 640
+      },
+      "applicableToInitialLoad": false,
+      "applicableToIncremental": true,
+      "tooltip": "Rows shared out (Incremental only). Rate: 800 cr / 1M Rows Shared (Prod) - 640 cr (SBX)."
+    },
+    "privateConnectGB": {
+      "phase": "ingestion",
+      "label": "Private Connect Data Processed",
+      "unit": "Per 1 GB Processed",
+      "unitDivisor": 1,
+      "credits": {
+        "Production": 500,
+        "Sandbox": 400
+      },
+      "applicableToInitialLoad": true,
+      "applicableToIncremental": true,
+      "tooltip": "PrivateLink / Private Endpoint. Rate: 500 cr / 1 GB Processed (Prod) - 400 cr (SBX)."
+    },
+    "profileUnification": {
+      "phase": "harmonization",
+      "label": "Profile Unification (Identity Resolution)",
+      "unit": "Per 1M Rows Processed",
+      "unitDivisor": 1000000,
+      "credits": {
+        "Production": 100000,
+        "Sandbox": 80000
+      },
+      "applicableToInitialLoad": true,
+      "applicableToIncremental": true,
+      "tooltip": "Highest-cost item. Rate: 100,000 cr / 1M Rows Processed (Prod) - 80,000 cr (SBX)."
+    },
+    "matchReconRules": {
+      "phase": "harmonization",
+      "label": "Match & Reconciliation Rule Executions",
+      "unit": "Per 1M Rule Executions",
+      "unitDivisor": 1000000,
+      "credits": {
+        "Production": 5000,
+        "Sandbox": 4000
+      },
+      "applicableToInitialLoad": true,
+      "applicableToIncremental": true,
+      "tooltip": "Rulesets executed across unified population. Rate: 5,000 cr / 1M Rule Executions (Prod) - 4,000 cr (SBX)."
+    },
+    "realtimeEvents": {
+      "phase": "realtime",
+      "label": "Sub-second Real-Time Events",
+      "unit": "Per 1M combined Events/API/Actions",
+      "unitDivisor": 1000000,
+      "credits": {
+        "Production": 70000,
+        "Sandbox": 56000
+      },
+      "applicableToInitialLoad": false,
+      "applicableToIncremental": true,
+      "tooltip": "HIGH cost. Incremental only. Rate: 70,000 cr / 1M combined Events/API/Actions (Prod) - 56,000 cr (SBX)."
+    },
+    "calculatedInsightsBatch": {
+      "phase": "insights",
+      "label": "Calculated Insights - Batch",
+      "unit": "Per 1M Rows Processed",
+      "unitDivisor": 1000000,
+      "credits": {
+        "Production": 15,
+        "Sandbox": 12
+      },
+      "applicableToInitialLoad": true,
+      "applicableToIncremental": true,
+      "tooltip": "Scheduled aggregations (LTV, RFM). Rate: 15 cr / 1M Rows Processed (Prod) - 12 cr (SBX)."
+    },
+    "calculatedInsightsStreaming": {
+      "phase": "insights",
+      "label": "Calculated Insights - Streaming",
+      "unit": "Per 1M Rows Processed",
+      "unitDivisor": 1000000,
+      "credits": {
+        "Production": 800,
+        "Sandbox": 640
+      },
+      "applicableToInitialLoad": false,
+      "applicableToIncremental": true,
+      "tooltip": "Continuously recomputed (Incremental only). Rate: 800 cr / 1M Rows Processed (Prod) - 640 cr (SBX)."
+    },
+    "inferences": {
+      "phase": "insights",
+      "label": "Inferences (AI/ML)",
+      "unit": "Per 1M Inferences",
+      "unitDivisor": 1000000,
+      "credits": {
+        "Production": 3500,
+        "Sandbox": 2800
+      },
+      "applicableToInitialLoad": true,
+      "applicableToIncremental": true,
+      "tooltip": "ML model invocations. Rate: 3,500 cr / 1M Inferences (Prod) - 2,800 cr (SBX)."
+    },
+    "dataQueries": {
+      "phase": "act",
+      "label": "Data Queries",
+      "unit": "Per 1M Rows Processed",
+      "unitDivisor": 1000000,
+      "credits": {
+        "Production": 2,
+        "Sandbox": 1.6
+      },
+      "applicableToInitialLoad": false,
+      "applicableToIncremental": true,
+      "tooltip": "Live queries (Incremental only). Rate: 2 cr / 1M Rows Processed (Prod) - 1.6 cr (SBX)."
+    },
+    "streamingActions": {
+      "phase": "act",
+      "label": "Streaming Actions (incl. Lookups)",
+      "unit": "Per 1M Rows Processed",
+      "unitDivisor": 1000000,
+      "credits": {
+        "Production": 800,
+        "Sandbox": 640
+      },
+      "applicableToInitialLoad": false,
+      "applicableToIncremental": true,
+      "tooltip": "Real-time actions (Incremental only). Rate: 800 cr / 1M Rows Processed (Prod) - 640 cr (SBX)."
+    },
+    "segmentRowsProcessed": {
+      "phase": "activation",
+      "label": "Segment Rows Processed",
+      "unit": "Per 1M Rows Processed",
+      "unitDivisor": 1000000,
+      "credits": {
+        "Production": 20,
+        "Sandbox": 16
+      },
+      "applicableToInitialLoad": false,
+      "applicableToIncremental": true,
+      "tooltip": "Rows evaluated for segment membership (Incremental only). Rate: 20 cr / 1M Rows Processed (Prod) - 16 cr (SBX)."
+    },
+    "batchActivation": {
+      "phase": "activation",
+      "label": "Batch Activation (with or without related attributes)",
+      "unit": "Per 1M Rows Processed",
+      "unitDivisor": 1000000,
+      "credits": {
+        "Production": 10,
+        "Sandbox": 8
+      },
+      "applicableToInitialLoad": false,
+      "applicableToIncremental": true,
+      "tooltip": "Audience push (Incremental only). Rate: 10 cr / 1M Rows Processed (Prod) - 8 cr (SBX)."
+    },
+    "streamingActivation": {
+      "phase": "activation",
+      "label": "Activate DMO - Streaming",
+      "unit": "Per 1M Rows Processed",
+      "unitDivisor": 1000000,
+      "credits": {
+        "Production": 1600,
+        "Sandbox": 1280
+      },
+      "applicableToInitialLoad": false,
+      "applicableToIncremental": true,
+      "tooltip": "Continuous streaming activation (Incremental only). Rate: 1,600 cr / 1M Rows Processed (Prod) - 1,280 cr (SBX)."
+    }
+  },
+  "assumptions": {
+    "daysPerYear": 365,
+    "defaultOverheadPct": 0.1
+  }
+}
