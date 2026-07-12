@@ -1,0 +1,681 @@
+{
+  "checks": {
+    "duplicate": {
+      "name": "Duplicate Check",
+      "shortName": "Duplicates",
+      "description": "Find records that have duplicate values in the selected field.",
+      "appliesToTypes": [
+        "string",
+        "email",
+        "phone",
+        "number",
+        "reference",
+        "picklist"
+      ],
+      "icon": "copy"
+    },
+    "null_empty": {
+      "name": "NULL / Empty Analysis",
+      "shortName": "NULL/Empty",
+      "description": "Percentage of records where the selected field is NULL, empty string, or whitespace.",
+      "appliesToTypes": [
+        "string",
+        "email",
+        "phone",
+        "number",
+        "reference",
+        "picklist",
+        "text",
+        "url",
+        "date",
+        "boolean",
+        "int",
+        "currency",
+        "array"
+      ],
+      "icon": "circle-off"
+    },
+    "completeness": {
+      "name": "Completeness Score",
+      "shortName": "Completeness",
+      "description": "Overall completeness score for the selected field (weighted by NULL, empty, and default-value ratios).",
+      "appliesToTypes": [
+        "string",
+        "email",
+        "phone",
+        "number",
+        "reference",
+        "picklist",
+        "text",
+        "url",
+        "date",
+        "boolean",
+        "int",
+        "currency",
+        "array"
+      ],
+      "icon": "check-square"
+    },
+    "value_distribution": {
+      "name": "Value Distribution",
+      "shortName": "Distribution",
+      "description": "Top values, cardinality, and frequency histogram for the selected field.",
+      "appliesToTypes": [
+        "string",
+        "picklist",
+        "email",
+        "phone",
+        "reference",
+        "number",
+        "int",
+        "currency",
+        "boolean",
+        "url",
+        "array"
+      ],
+      "icon": "bar-chart-2"
+    },
+    "format_validation": {
+      "name": "Format Validation",
+      "shortName": "Format",
+      "description": "Validate the format of the field (email address, phone number, or URL) and report invalid rows.",
+      "appliesToTypes": [
+        "email",
+        "phone",
+        "url"
+      ],
+      "icon": "shield-check"
+    },
+    "referential_integrity": {
+      "name": "Referential Integrity",
+      "shortName": "Ref Integrity",
+      "description": "Check that foreign-key references point to existing parent records.",
+      "appliesToTypes": [
+        "reference"
+      ],
+      "icon": "link-2"
+    }
+  },
+  "systems": {
+    "salesforce": {
+      "name": "Salesforce",
+      "description": "Salesforce Sales / Service / Custom objects (Production or Sandbox org).",
+      "color": "sky",
+      "hex": "#0ea5e9",
+      "icon": "cloud",
+      "objects": {
+        "Account": {
+          "label": "Account",
+          "description": "Companies or households you do business with.",
+          "fields": {
+            "Name": {
+              "label": "Name",
+              "type": "string",
+              "description": "Account name"
+            },
+            "Industry": {
+              "label": "Industry",
+              "type": "picklist",
+              "description": "Industry classification"
+            },
+            "Type": {
+              "label": "Type",
+              "type": "picklist",
+              "description": "Account type (Customer, Prospect, etc.)"
+            },
+            "BillingCountry": {
+              "label": "Billing Country",
+              "type": "string",
+              "description": "Country of billing address"
+            },
+            "Phone": {
+              "label": "Phone",
+              "type": "phone",
+              "description": "Primary phone number"
+            },
+            "Website": {
+              "label": "Website",
+              "type": "url",
+              "description": "Account website URL"
+            },
+            "AnnualRevenue": {
+              "label": "Annual Revenue",
+              "type": "currency",
+              "description": "Annual revenue in USD"
+            },
+            "NumberOfEmployees": {
+              "label": "Number of Employees",
+              "type": "int",
+              "description": "Total employee count"
+            },
+            "Description": {
+              "label": "Description",
+              "type": "text",
+              "description": "Long-form description"
+            },
+            "OwnerId": {
+              "label": "Owner ID",
+              "type": "reference",
+              "description": "User who owns the account"
+            }
+          }
+        },
+        "Contact": {
+          "label": "Contact",
+          "description": "Individual people associated with accounts.",
+          "fields": {
+            "FirstName": {
+              "label": "First Name",
+              "type": "string",
+              "description": "Contact first name"
+            },
+            "LastName": {
+              "label": "Last Name",
+              "type": "string",
+              "description": "Contact last name"
+            },
+            "Email": {
+              "label": "Email",
+              "type": "email",
+              "description": "Primary email address"
+            },
+            "Phone": {
+              "label": "Phone",
+              "type": "phone",
+              "description": "Primary phone number"
+            },
+            "MobilePhone": {
+              "label": "Mobile Phone",
+              "type": "phone",
+              "description": "Mobile phone number"
+            },
+            "Title": {
+              "label": "Title",
+              "type": "string",
+              "description": "Job title"
+            },
+            "MailingCountry": {
+              "label": "Mailing Country",
+              "type": "string",
+              "description": "Country of mailing address"
+            },
+            "LeadSource": {
+              "label": "Lead Source",
+              "type": "picklist",
+              "description": "Original marketing source"
+            },
+            "AccountId": {
+              "label": "Account ID",
+              "type": "reference",
+              "description": "Related Account"
+            },
+            "Birthdate": {
+              "label": "Birthdate",
+              "type": "date",
+              "description": "Contact birthdate"
+            }
+          }
+        },
+        "Lead": {
+          "label": "Lead",
+          "description": "Prospective customers not yet converted into an Account/Contact.",
+          "fields": {
+            "Company": {
+              "label": "Company",
+              "type": "string",
+              "description": "Company name"
+            },
+            "FirstName": {
+              "label": "First Name",
+              "type": "string",
+              "description": "Lead first name"
+            },
+            "LastName": {
+              "label": "Last Name",
+              "type": "string",
+              "description": "Lead last name"
+            },
+            "Email": {
+              "label": "Email",
+              "type": "email",
+              "description": "Contact email"
+            },
+            "Phone": {
+              "label": "Phone",
+              "type": "phone",
+              "description": "Phone number"
+            },
+            "Status": {
+              "label": "Status",
+              "type": "picklist",
+              "description": "Qualification status"
+            },
+            "Rating": {
+              "label": "Rating",
+              "type": "picklist",
+              "description": "Lead rating (Hot/Warm/Cold)"
+            },
+            "Country": {
+              "label": "Country",
+              "type": "string",
+              "description": "Country"
+            },
+            "LeadSource": {
+              "label": "Lead Source",
+              "type": "picklist",
+              "description": "Original marketing source"
+            },
+            "IsConverted": {
+              "label": "Is Converted",
+              "type": "boolean",
+              "description": "Has been converted"
+            }
+          }
+        },
+        "Case": {
+          "label": "Case",
+          "description": "Customer support cases.",
+          "fields": {
+            "CaseNumber": {
+              "label": "Case Number",
+              "type": "string",
+              "description": "Auto-generated case number"
+            },
+            "Subject": {
+              "label": "Subject",
+              "type": "string",
+              "description": "Case subject"
+            },
+            "Description": {
+              "label": "Description",
+              "type": "text",
+              "description": "Case description"
+            },
+            "Status": {
+              "label": "Status",
+              "type": "picklist",
+              "description": "Case status"
+            },
+            "Priority": {
+              "label": "Priority",
+              "type": "picklist",
+              "description": "Case priority"
+            },
+            "Origin": {
+              "label": "Origin",
+              "type": "picklist",
+              "description": "Case origin (Phone, Web, Email)"
+            },
+            "Type": {
+              "label": "Type",
+              "type": "picklist",
+              "description": "Case type"
+            },
+            "AccountId": {
+              "label": "Account ID",
+              "type": "reference",
+              "description": "Related Account"
+            },
+            "ContactId": {
+              "label": "Contact ID",
+              "type": "reference",
+              "description": "Related Contact"
+            },
+            "SuppliedEmail": {
+              "label": "Supplied Email",
+              "type": "email",
+              "description": "Email of case submitter"
+            }
+          }
+        },
+        "Opportunity": {
+          "label": "Opportunity",
+          "description": "Sales opportunities being pursued.",
+          "fields": {
+            "Name": {
+              "label": "Name",
+              "type": "string",
+              "description": "Opportunity name"
+            },
+            "StageName": {
+              "label": "Stage",
+              "type": "picklist",
+              "description": "Sales stage"
+            },
+            "Amount": {
+              "label": "Amount",
+              "type": "currency",
+              "description": "Deal size in USD"
+            },
+            "CloseDate": {
+              "label": "Close Date",
+              "type": "date",
+              "description": "Expected close date"
+            },
+            "LeadSource": {
+              "label": "Lead Source",
+              "type": "picklist",
+              "description": "Original marketing source"
+            },
+            "AccountId": {
+              "label": "Account ID",
+              "type": "reference",
+              "description": "Related Account"
+            },
+            "Probability": {
+              "label": "Probability",
+              "type": "int",
+              "description": "Win probability (0-100)"
+            },
+            "Type": {
+              "label": "Type",
+              "type": "picklist",
+              "description": "Business type"
+            }
+          }
+        },
+        "User": {
+          "label": "User",
+          "description": "Salesforce platform users.",
+          "fields": {
+            "Email": {
+              "label": "Email",
+              "type": "email",
+              "description": "User email"
+            },
+            "Username": {
+              "label": "Username",
+              "type": "string",
+              "description": "Login username"
+            },
+            "FirstName": {
+              "label": "First Name",
+              "type": "string",
+              "description": "User first name"
+            },
+            "LastName": {
+              "label": "Last Name",
+              "type": "string",
+              "description": "User last name"
+            },
+            "IsActive": {
+              "label": "Is Active",
+              "type": "boolean",
+              "description": "Active user flag"
+            },
+            "ProfileId": {
+              "label": "Profile ID",
+              "type": "reference",
+              "description": "Assigned Profile"
+            },
+            "UserRoleId": {
+              "label": "User Role ID",
+              "type": "reference",
+              "description": "Role in hierarchy"
+            }
+          }
+        },
+        "FeedItem": {
+          "label": "Feed Item",
+          "description": "Chatter feed post (also used for Case Comments migration).",
+          "fields": {
+            "Body": {
+              "label": "Body",
+              "type": "text",
+              "description": "Feed body content"
+            },
+            "Type": {
+              "label": "Type",
+              "type": "picklist",
+              "description": "Feed item type"
+            },
+            "ParentId": {
+              "label": "Parent ID",
+              "type": "reference",
+              "description": "Parent record"
+            },
+            "CreatedById": {
+              "label": "Created By ID",
+              "type": "reference",
+              "description": "User who created the feed item"
+            },
+            "Title": {
+              "label": "Title",
+              "type": "string",
+              "description": "Feed title (often used for Comment ID during migration)"
+            },
+            "IsRichText": {
+              "label": "Is Rich Text",
+              "type": "boolean",
+              "description": "Contains HTML markup"
+            }
+          }
+        },
+        "Zendesk_Ticket__c": {
+          "label": "Zendesk Ticket (Custom)",
+          "description": "Custom object storing migrated Zendesk tickets.",
+          "fields": {
+            "Name": {
+              "label": "Name",
+              "type": "string",
+              "description": "Auto-number"
+            },
+            "Zendesk_Ticket_ID__c": {
+              "label": "Zendesk Ticket ID",
+              "type": "string",
+              "description": "Original Zendesk ticket identifier"
+            },
+            "Subject__c": {
+              "label": "Subject",
+              "type": "string",
+              "description": "Ticket subject"
+            },
+            "Description__c": {
+              "label": "Description",
+              "type": "text",
+              "description": "Ticket description"
+            },
+            "Status__c": {
+              "label": "Status",
+              "type": "picklist",
+              "description": "Ticket status"
+            },
+            "Priority__c": {
+              "label": "Priority",
+              "type": "picklist",
+              "description": "Ticket priority"
+            },
+            "Requester_Email__c": {
+              "label": "Requester Email",
+              "type": "email",
+              "description": "Original requester email"
+            },
+            "Requester_Phone__c": {
+              "label": "Requester Phone",
+              "type": "phone",
+              "description": "Original requester phone"
+            },
+            "Created_Date_Zendesk__c": {
+              "label": "Zendesk Created Date",
+              "type": "date",
+              "description": "Original creation date in Zendesk"
+            }
+          }
+        }
+      }
+    },
+    "zendesk": {
+      "name": "Zendesk",
+      "description": "Zendesk Support / Chat / Sell source system.",
+      "color": "emerald",
+      "hex": "#10b981",
+      "icon": "headphones",
+      "objects": {
+        "Ticket": {
+          "label": "Ticket",
+          "description": "Zendesk support tickets.",
+          "fields": {
+            "id": {
+              "label": "ID",
+              "type": "int",
+              "description": "Unique ticket ID"
+            },
+            "subject": {
+              "label": "Subject",
+              "type": "string",
+              "description": "Ticket subject"
+            },
+            "description": {
+              "label": "Description",
+              "type": "text",
+              "description": "First comment body"
+            },
+            "status": {
+              "label": "Status",
+              "type": "picklist",
+              "description": "new, open, pending, hold, solved, closed"
+            },
+            "priority": {
+              "label": "Priority",
+              "type": "picklist",
+              "description": "low, normal, high, urgent"
+            },
+            "type": {
+              "label": "Type",
+              "type": "picklist",
+              "description": "problem, incident, question, task"
+            },
+            "requester_id": {
+              "label": "Requester ID",
+              "type": "reference",
+              "description": "User who submitted the ticket"
+            },
+            "assignee_id": {
+              "label": "Assignee ID",
+              "type": "reference",
+              "description": "User assigned to the ticket"
+            },
+            "organization_id": {
+              "label": "Organization ID",
+              "type": "reference",
+              "description": "Requester's organization"
+            },
+            "tags": {
+              "label": "Tags",
+              "type": "array",
+              "description": "Tag list"
+            }
+          }
+        },
+        "User": {
+          "label": "User",
+          "description": "Zendesk end-users, agents, and admins.",
+          "fields": {
+            "id": {
+              "label": "ID",
+              "type": "int",
+              "description": "Unique user ID"
+            },
+            "email": {
+              "label": "Email",
+              "type": "email",
+              "description": "Primary email address"
+            },
+            "name": {
+              "label": "Name",
+              "type": "string",
+              "description": "Full name"
+            },
+            "phone": {
+              "label": "Phone",
+              "type": "phone",
+              "description": "Primary phone"
+            },
+            "role": {
+              "label": "Role",
+              "type": "picklist",
+              "description": "end-user, agent, admin"
+            },
+            "organization_id": {
+              "label": "Organization ID",
+              "type": "reference",
+              "description": "Primary organization"
+            },
+            "active": {
+              "label": "Active",
+              "type": "boolean",
+              "description": "Active user flag"
+            }
+          }
+        },
+        "Organization": {
+          "label": "Organization",
+          "description": "Zendesk organizations (companies).",
+          "fields": {
+            "id": {
+              "label": "ID",
+              "type": "int",
+              "description": "Unique organization ID"
+            },
+            "name": {
+              "label": "Name",
+              "type": "string",
+              "description": "Organization name"
+            },
+            "domain_names": {
+              "label": "Domain Names",
+              "type": "array",
+              "description": "Email domains that map to the org"
+            },
+            "tags": {
+              "label": "Tags",
+              "type": "array",
+              "description": "Tag list"
+            },
+            "details": {
+              "label": "Details",
+              "type": "text",
+              "description": "Freeform notes"
+            }
+          }
+        },
+        "Comment": {
+          "label": "Comment",
+          "description": "Ticket comments (public replies and private notes).",
+          "fields": {
+            "id": {
+              "label": "ID",
+              "type": "int",
+              "description": "Unique comment ID"
+            },
+            "ticket_id": {
+              "label": "Ticket ID",
+              "type": "reference",
+              "description": "Parent ticket"
+            },
+            "author_id": {
+              "label": "Author ID",
+              "type": "reference",
+              "description": "User who wrote the comment"
+            },
+            "body": {
+              "label": "Body",
+              "type": "text",
+              "description": "Comment body"
+            },
+            "html_body": {
+              "label": "HTML Body",
+              "type": "text",
+              "description": "HTML-formatted body"
+            },
+            "public": {
+              "label": "Public",
+              "type": "boolean",
+              "description": "Public comment vs internal note"
+            }
+          }
+        }
+      }
+    }
+  }
+}

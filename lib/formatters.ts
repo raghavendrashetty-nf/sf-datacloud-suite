@@ -1,3 +1,20 @@
-export const fmtUSD = (v: number) => new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(v || 0);
-export const fmtNum = (v: number) => new Intl.NumberFormat("en-US", { maximumFractionDigits: 0 }).format(v || 0);
-export const fmtCredits = (v: number) => { const n = v || 0; if (n >= 1e9) return (n/1e9).toFixed(2) + "B"; if (n >= 1e6) return (n/1e6).toFixed(2) + "M"; if (n >= 1e3) return (n/1e3).toFixed(1) + "K"; return n.toFixed(0); };
+export function fmtUSD(n: number): string {
+  if (!isFinite(n)) return '$0';
+  return new Intl.NumberFormat('en-US', {
+    style: 'currency', currency: 'USD',
+    maximumFractionDigits: n >= 100 ? 0 : 2
+  }).format(n);
+}
+
+export function fmtCredits(n: number): string {
+  if (!isFinite(n)) return '0';
+  if (n === 0) return '0';
+  return new Intl.NumberFormat('en-US', {
+    maximumFractionDigits: n >= 100 ? 0 : 2
+  }).format(n);
+}
+
+export function fmtNumber(n: number): string {
+  if (!isFinite(n)) return '0';
+  return new Intl.NumberFormat('en-US').format(Math.round(n));
+}

@@ -1,93 +1,59 @@
-# Salesforce Data Cloud Suite v3.4
+# Salesforce Data Cloud Suite - v4.4
 
-A Next.js 14 + TypeScript + Tailwind CSS application providing three Discovery-phase tools:
+Production-ready Next.js 14 (App Router, TypeScript strict) tool with **two**
+features:
 
-1. **Credit Consumption Analyser** - Every rate-sheet item as its own input, rate metric in every tooltip.
-2. **Data Readiness Validator** - Now with **COUNT_DISTINCT** for accurate Salesforce duplicate rates at any scale.
-3. **Documentation** - Full methodology reference, fully editable JSON content.
+1. **Credit Consumption Calculator** - estimate Salesforce Data Cloud (Data 360)
+   credit consumption and USD cost during Discovery, based on the official rate
+   sheet.
+2. **Data Readiness Assessment** (new in v4.4) - assess source-system data
+   quality before ingesting into Data Cloud. Run duplicate, NULL/empty,
+   completeness, distribution, format, and referential integrity checks against
+   any Salesforce or Zendesk object & field.
 
-## What is new in v3.4
+## What is new in v4.4
 
-- **Accurate duplicate counts via COUNT_DISTINCT** - Salesforce now uses `SELECT COUNT_DISTINCT(field) FROM object WHERE field != null` to get an exact unique-value count regardless of table size. Previous versions were limited to the top 200 duplicate groups via GROUP BY, which under-reported duplicates on large datasets.
-- **Documentation module** - `/documentation` route with full methodology; `/documentation/settings` provides a JSON editor to update content in-browser.
-- **Ready for Railway deploy** - includes `Dockerfile`, `.dockerignore`, and `railway.json`; `next.config.mjs` sets `output: "standalone"` for lean container image.
+- **Landing page** now shows two hero banners - one per feature.
+- **Data Readiness feature** (`/data-readiness`) with a 4-step wizard:
+  1. Pick a source system (Salesforce or Zendesk)
+  2. Pick a data quality check (duplicate, null/empty, completeness,
+     value distribution, format validation, referential integrity)
+  3. Type-to-search for an Object, then a Field on that object
+     (fields are filtered to only those the selected check can apply to)
+  4. Run and view rich results (headline metric, severity color, charts,
+     example rows, sample query used)
+- New API `POST /api/data-readiness/check` returns deterministic, realistic
+  mock results based on `(system, checkType, object, field)` - swap the mock
+  for real Salesforce / Zendesk API calls whenever you are ready.
+- **Nothing in the Credit Calculator was changed.** All v4.3 fixes remain intact.
 
 ## Local Quick Start
 
-Prerequisites: Node.js 18.17+ and npm 9+.
-
 ```bash
-unzip sf-datacloud-suite.zip
-cd sf-datacloud-suite
 npm install
 npm run dev
 # open http://localhost:3000
 ```
 
-## Deploy to Railway
+No extra dependencies needed (canvas alias is baked into `next.config.mjs`).
 
-### Option A - Deploy from GitHub (recommended)
-
-1. Push this project to a GitHub repository.
-2. Sign in at https://railway.com and click **New Project -> Deploy from GitHub repo**.
-3. Grant Railway access to the repo, then select it.
-4. Railway auto-detects the `Dockerfile` and starts the build. No environment variables are required for the app to run; add any secrets later if you want to pre-seed credentials.
-5. When the build completes, click **Settings -> Networking -> Generate Domain** to get a public HTTPS URL, or attach your own custom domain.
-
-### Option B - Deploy via Railway CLI
+## Deploy to Railway (GitHub)
 
 ```bash
-npm i -g @railway/cli
-railway login
-railway init            # creates the project
-railway up              # uploads and builds
-railway open            # opens the deployed URL
+git init && git add . && git commit -m "v4.4"
+git remote add origin https://github.com/<user>/sf-datacloud-suite.git
+git push -u origin main
 ```
 
-### Option C - One-off via Docker locally
+Railway auto-detects the Dockerfile. `ENV BUILD_STANDALONE=1` in the Dockerfile
+produces the standalone bundle in-container.
 
-```bash
-docker build -t sf-datacloud-suite .
-docker run -p 3000:3000 sf-datacloud-suite
-# open http://localhost:3000
-```
+## Data Readiness catalog
 
-## How the container works
+Source systems, objects, fields, and check definitions all live in
+`config/dataReadinessCatalog.json`. To add a new system or check, edit that
+file only - no code changes required.
 
-- **Multi-stage build:** `node:20-alpine` builder installs deps and runs `npm run build`; runner stage copies only the standalone output + public + static assets.
-- **Non-root user** `nextjs` (uid 1001) inside the container.
-- **Standalone Next.js output** (`next.config.mjs -> output: "standalone"`) drops the container size to under 200 MB.
-- **PORT** is honored - Railway sets `PORT` automatically; the container also defaults to 3000.
+## Formulas & rate sheet
 
-## Routes
-
-- `/` - Landing with 3 tool cards
-- `/credit-calculator` - Credit Consumption Analyser
-- `/credit-calculator/settings` - UI-editable rate configuration
-- `/data-readiness` - 6-step wizard (Select System -> Connection -> Objects -> Configure Rules -> Run -> Results)
-- `/data-readiness/settings` - UI-editable readiness config
-- `/documentation` - Methodology reference (with PDF export)
-- `/documentation/settings` - JSON editor for docs content
-
-## Backend API
-
-- `POST /api/readiness/test-connection` - validate credentials
-- `POST /api/readiness/metadata` - list objects/tables/lists
-- `POST /api/readiness/fields` - list fields for one object
-- `POST /api/readiness/duplicate-check` - run rules array
-
-All routes run on the Node.js runtime and return live `logs` for the in-app Backend Console.
-
-## System setup
-
-- **Salesforce:** user with API access + security token. Login URL defaults to `https://login.salesforce.com`.
-- **Zendesk:** API token from Admin Center -> Apps and integrations -> APIs.
-- **SharePoint:** Azure AD app with `Sites.Read.All` Application permission; `siteId` format `host,GUID,GUID`.
-
-## Security notes
-
-- Credentials are POSTed to the Next.js server per request; nothing is persisted server-side.
-- Saved Connections go to browser localStorage only.
-- The Backend Console redacts `password` / `apiToken` / `clientSecret` / `securityToken` / `authorization` / `sessionId` before returning logs.
-
-Schema v3.4.0 - Last updated 2026-07-07
+See the Credit Calculator section - unchanged from v4.3.
