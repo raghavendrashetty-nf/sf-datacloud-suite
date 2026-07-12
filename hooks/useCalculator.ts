@@ -9,23 +9,13 @@ function buildDefaultInputs(rates: RatesConfig): CalculatorInputs {
   const initials: Record<string, number> = {};
   const periods: Record<string, Period> = {};
   for (const item of rates.items) {
-    volumes[item.key] = 0;
-    initials[item.key] = 0;
-    periods[item.key] = 'year';
+    volumes[item.key] = 0; initials[item.key] = 0; periods[item.key] = 'year';
   }
-  return {
-    environment: 'Production',
-    costPerCreditUSD: rates.settings.costPerCreditUSD,
-    overheadPct: 0,
-    itemVolumes: volumes,
-    itemInitials: initials,
-    itemPeriods: periods
-  };
+  return { environment: 'Production', costPerCreditUSD: rates.settings.costPerCreditUSD, overheadPct: 0, itemVolumes: volumes, itemInitials: initials, itemPeriods: periods };
 }
 
 export function useCalculator(rates: RatesConfig) {
   const [inputs, setInputs] = useState<CalculatorInputs>(() => buildDefaultInputs(rates));
-
   useEffect(() => {
     setInputs((s) => {
       const volumes = { ...s.itemVolumes };
@@ -43,23 +33,15 @@ export function useCalculator(rates: RatesConfig) {
       return { ...s, itemVolumes: volumes, itemInitials: initials, itemPeriods: periods };
     });
   }, [rates.items]);
-
   const result = useMemo(() => calculate(inputs, rates), [inputs, rates]);
-
   return {
     inputs, result,
     setEnvironment: (environment: Environment) => setInputs((s) => ({ ...s, environment })),
-    setCost: (costPerCreditUSD: number) =>
-      setInputs((s) => ({ ...s, costPerCreditUSD: Math.max(0, costPerCreditUSD) })),
-    setOverhead: (overheadPct: number) =>
-      setInputs((s) => ({ ...s, overheadPct: Math.max(0, overheadPct) })),
-    setItemVolume: (key: string, v: number) =>
-      setInputs((s) => ({ ...s, itemVolumes: { ...s.itemVolumes, [key]: Math.max(0, v) } })),
-    setItemInitial: (key: string, v: number) =>
-      setInputs((s) => ({ ...s, itemInitials: { ...s.itemInitials, [key]: Math.max(0, v) } })),
-    setItemPeriod: (key: string, p: Period) =>
-      setInputs((s) => ({ ...s, itemPeriods: { ...s.itemPeriods, [key]: p } })),
-    reset: () => setInputs(buildDefaultInputs(rates)),
-    setAll: (next: CalculatorInputs) => setInputs(next)
+    setCost: (costPerCreditUSD: number) => setInputs((s) => ({ ...s, costPerCreditUSD: Math.max(0, costPerCreditUSD) })),
+    setOverhead: (overheadPct: number) => setInputs((s) => ({ ...s, overheadPct: Math.max(0, overheadPct) })),
+    setItemVolume: (key: string, v: number) => setInputs((s) => ({ ...s, itemVolumes: { ...s.itemVolumes, [key]: Math.max(0, v) } })),
+    setItemInitial: (key: string, v: number) => setInputs((s) => ({ ...s, itemInitials: { ...s.itemInitials, [key]: Math.max(0, v) } })),
+    setItemPeriod: (key: string, p: Period) => setInputs((s) => ({ ...s, itemPeriods: { ...s.itemPeriods, [key]: p } })),
+    reset: () => setInputs(buildDefaultInputs(rates))
   };
 }

@@ -2,13 +2,7 @@
 
 import { ChangeEvent, FocusEvent, useEffect, useState } from 'react';
 
-interface Props {
-  value: number;
-  onChange: (n: number) => void;
-  ariaLabel: string;
-  suffix?: string;
-  min?: number;
-}
+interface Props { value: number; onChange: (n: number) => void; ariaLabel: string; suffix?: string; min?: number; }
 
 function stepFor(v: number): number {
   const a = Math.abs(v);
@@ -24,32 +18,18 @@ export default function NumberSpinner({ value, onChange, ariaLabel, suffix, min 
   const [display, setDisplay] = useState<string>(value === 0 ? '' : String(value));
 
   useEffect(() => {
-    if (value === 0) {
-      setDisplay((prev) => (prev === '' || Number(prev) === 0 ? prev : ''));
-    } else {
-      setDisplay(String(value));
-    }
+    if (value === 0) setDisplay((prev) => (prev === '' || Number(prev) === 0 ? prev : ''));
+    else setDisplay(String(value));
   }, [value]);
 
   function handleChange(e: ChangeEvent<HTMLInputElement>) {
     const raw = e.target.value.replace(/[^0-9.]/g, '');
     setDisplay(raw);
-    if (raw === '' || raw === '.') {
-      onChange(0);
-    } else {
-      const n = Number(raw);
-      if (!isNaN(n)) onChange(Math.max(min, n));
-    }
+    if (raw === '' || raw === '.') onChange(0);
+    else { const n = Number(raw); if (!isNaN(n)) onChange(Math.max(min, n)); }
   }
-
-  function handleFocus(e: FocusEvent<HTMLInputElement>) {
-    e.target.select();
-  }
-
-  function handleBlur() {
-    if (display.endsWith('.')) setDisplay(display.slice(0, -1));
-  }
-
+  function handleFocus(e: FocusEvent<HTMLInputElement>) { e.target.select(); }
+  function handleBlur() { if (display.endsWith('.')) setDisplay(display.slice(0, -1)); }
   function dec() {
     const current = Number(display) || 0;
     const s = stepFor(current);
@@ -57,7 +37,6 @@ export default function NumberSpinner({ value, onChange, ariaLabel, suffix, min 
     setDisplay(next === 0 ? '' : String(next));
     onChange(next);
   }
-
   function inc() {
     const current = Number(display) || 0;
     const s = stepFor(current);
@@ -70,20 +49,12 @@ export default function NumberSpinner({ value, onChange, ariaLabel, suffix, min 
     <div className="flex items-stretch rounded-lg border border-slate-300 bg-white overflow-hidden focus-within:ring-2 focus-within:ring-sky-400">
       <button type="button" onClick={dec} aria-label={`Decrease ${ariaLabel}`}
         className="px-2 text-slate-500 hover:bg-slate-100 shrink-0">-</button>
-      <input
-        type="text" inputMode="numeric"
-        value={display}
-        onChange={handleChange}
-        onFocus={handleFocus}
-        onBlur={handleBlur}
-        placeholder="0"
-        aria-label={ariaLabel}
-        className="flex-1 min-w-0 w-full text-right px-2 py-1.5 text-sm outline-none tabular-nums placeholder:text-slate-300"
-      />
+      <input type="text" inputMode="numeric" value={display}
+        onChange={handleChange} onFocus={handleFocus} onBlur={handleBlur}
+        placeholder="0" aria-label={ariaLabel}
+        className="flex-1 min-w-0 w-full text-right px-2 py-1.5 text-sm outline-none tabular-nums placeholder:text-slate-300" />
       {suffix ? (
-        <span className="px-2 flex items-center text-xs text-slate-500 border-l border-slate-200 bg-slate-50 shrink-0">
-          {suffix}
-        </span>
+        <span className="px-2 flex items-center text-xs text-slate-500 border-l border-slate-200 bg-slate-50 shrink-0">{suffix}</span>
       ) : null}
       <button type="button" onClick={inc} aria-label={`Increase ${ariaLabel}`}
         className="px-2 text-slate-500 hover:bg-slate-100 border-l border-slate-200 shrink-0">+</button>

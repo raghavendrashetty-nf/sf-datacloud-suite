@@ -1,9 +1,6 @@
 'use client';
 
-interface Step {
-  key: string;
-  label: string;
-}
+interface Step { key: string; label: string; }
 
 interface Props {
   steps: Step[];
@@ -21,18 +18,13 @@ export default function StepIndicator({ steps, currentIndex, onStepClick }: Prop
         const clickable = !isFuture && !!onStepClick;
         return (
           <li key={step.key} className="flex items-center gap-2">
-            <button
-              type="button"
-              disabled={!clickable}
+            <button type="button" disabled={!clickable}
               onClick={() => clickable && onStepClick?.(i)}
               className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold transition-colors ${
-                isCurrent
-                  ? 'bg-emerald-600 text-white shadow'
-                  : isDone
-                    ? 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200'
-                    : 'bg-slate-100 text-slate-400'
-              } ${clickable ? 'cursor-pointer' : 'cursor-default'}`}
-            >
+                isCurrent ? 'bg-emerald-600 text-white shadow'
+                : isDone ? 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200'
+                : 'bg-slate-100 text-slate-400'
+              } ${clickable ? 'cursor-pointer' : 'cursor-default'}`}>
               <span className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] ${
                 isCurrent ? 'bg-white/20' : isDone ? 'bg-emerald-600 text-white' : 'bg-white text-slate-400'
               }`}>
@@ -40,9 +32,7 @@ export default function StepIndicator({ steps, currentIndex, onStepClick }: Prop
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" className="w-3 h-3">
                     <polyline points="20 6 9 17 4 12" />
                   </svg>
-                ) : (
-                  i + 1
-                )}
+                ) : (i + 1)}
               </span>
               {step.label}
             </button>

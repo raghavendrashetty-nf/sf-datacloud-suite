@@ -13,7 +13,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'URL must start with http(s)://' }, { status: 400 });
     }
     const upstream = await fetch(url, {
-      headers: { 'User-Agent': 'sf-datacloud-suite/4.2' }
+      headers: { 'User-Agent': 'sf-datacloud-suite/4.5' }
     });
     if (!upstream.ok) {
       return NextResponse.json({ error: `Upstream returned ${upstream.status}` }, { status: 502 });
