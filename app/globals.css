@@ -2,8 +2,37 @@
 @tailwind components;
 @tailwind utilities;
 
-html, body { font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
-input[type=number]::-webkit-inner-spin-button, input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
-input[type=number] { -moz-appearance: textfield; }
+:root {
+  --bg: #f7f8fb;
+  --fg: #0f172a;
+}
 
-@media print { .no-print { display: none !important; } body { background: white !important; } }
+html, body {
+  background: var(--bg);
+  color: var(--fg);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+@media print {
+  .no-print { display: none !important; }
+}
+
+.card { @apply bg-white rounded-2xl shadow-sm border border-slate-200/70; }
+.chip { @apply inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium; }
+.btn { @apply inline-flex items-center justify-center gap-2 px-4 py-2 rounded-xl font-medium transition-colors; }
+.btn-primary { @apply btn bg-slate-900 text-white hover:bg-slate-800; }
+.btn-ghost { @apply btn bg-white border border-slate-200 text-slate-700 hover:bg-slate-50; }
+
+.fade-in { animation: fadein 200ms ease-out; }
+@keyframes fadein {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.modal-backdrop {
+  @apply fixed inset-0 bg-slate-900/50 z-50 flex items-start justify-center p-4 overflow-y-auto;
+}
+.modal-panel {
+  @apply bg-white rounded-2xl shadow-xl w-full max-w-5xl my-8;
+}

@@ -1,96 +1,393 @@
-"use client";
-import Link from "next/link";
-import { useMemo, useState } from "react";
-import { Header } from "@/components/Header";
-import { SystemSelector } from "@/components/data-readiness/SystemSelector";
-import { SavedConnections } from "@/components/data-readiness/SavedConnections";
-import { CredentialsForm } from "@/components/data-readiness/CredentialsForm";
-import { ObjectSelector } from "@/components/data-readiness/ObjectSelector";
-import { RulesBuilder } from "@/components/data-readiness/RulesBuilder";
-import { AnalysisProgress } from "@/components/data-readiness/AnalysisProgress";
-import { ReadinessResults } from "@/components/data-readiness/ReadinessResults";
-import { BackendConsole } from "@/components/data-readiness/BackendConsole";
-import { ExportPDFButton } from "@/components/ExportPDFButton";
-import { useReadinessConfig } from "@/hooks/useReadinessConfig";
-import { addConnection } from "@/lib/connections";
-import type { SystemId, ReadinessReport, LogEntry, MetadataObject, Rule } from "@/lib/readinessTypes";
-type Step = "select" | "connection" | "metadata" | "rules" | "running" | "results";
-export default function Page() {
-  const { config } = useReadinessConfig();
-  const [step, setStep] = useState<Step>("select");
-  const [systemId, setSystemId] = useState<SystemId | null>(null);
-  const [creds, setCreds] = useState<Record<string, string>>({});
-  const [objects, setObjects] = useState<MetadataObject[]>([]);
-  const [selectedObjectNames, setSelectedObjectNames] = useState<string[]>([]);
-  const [loadingMeta, setLoadingMeta] = useState(false);
-  const [report, setReport] = useState<ReadinessReport | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const [consoleLogs, setConsoleLogs] = useState<LogEntry[]>([]);
-  const appendLogs = (newLogs: LogEntry[]) => setConsoleLogs(prev => [...prev, ...newLogs]);
-  const rulesEligibleObjects = useMemo(() => { const set = new Set(selectedObjectNames); return objects.filter(o => set.has(o.name)); }, [objects, selectedObjectNames]);
-  const fetchMetadata = async (c: Record<string, string>) => {
-    setLoadingMeta(true); setStep("metadata"); setError(null);
-    try {
-      const resp = await fetch("/api/readiness/metadata", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ systemId, credentials: c }) });
-      const data = await resp.json();
-      if (data.logs) appendLogs(data.logs);
-      if (!resp.ok) throw new Error(data?.error || "HTTP " + resp.status);
-      setObjects(data.objects || []);
-    } catch (e: any) { setError(e.message); setStep("connection"); }
-    finally { setLoadingMeta(false); }
-  };
-  const runAnalysis = async (rules: Rule[]) => {
-    setStep("running"); setError(null);
-    try {
-      const resp = await fetch("/api/readiness/duplicate-check", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ systemId, credentials: creds, options: { rules } }) });
-      const data = await resp.json();
-      if (data.logs) appendLogs(data.logs);
-      if (!resp.ok) throw new Error(data?.error || "HTTP " + resp.status);
-      setReport(data as ReadinessReport); setStep("results");
-    } catch (e: any) { setError(e.message); setStep("rules"); }
-  };
-  const stepIdx = { select: 0, connection: 1, metadata: 2, rules: 3, running: 4, results: 5 }[step];
-  const steps = ["Select System", "Connection", "Objects", "Configure Rules", "Run", "Results"];
-  const clearConsole = () => setConsoleLogs([]);
+'use client';
+
+import { useMemo, useState } from 'react';
+import Link from 'next/link';
+import Header from '@/components/Header';
+import StepIndicator from '@/components/data-readiness/StepIndicator';
+import SearchableSelect from '@/components/data-readiness/SearchableSelect';
+import CheckResults from '@/components/data-readiness/CheckResults';
+import catalog from '@/config/dataReadinessCatalog.json';
+import type { Catalog, CheckKey, CheckResult, SystemKey } from '@/lib/dataReadiness';
+
+const CAT = catalog as unknown as Catalog;
+
+const STEPS = [
+  { key: 'system', label: 'System' },
+  { key: 'check',  label: 'Check' },
+  { key: 'target', label: 'Object & Field' },
+  { key: 'result', label: 'Results' }
+];
+
+function SystemCard({
+  systemKey, active, onClick
+}: { systemKey: SystemKey; active: boolean; onClick: () => void }) {
+  const sys = CAT.systems[systemKey];
   return (
-    <main className="min-h-screen bg-slate-50">
-      <Header title="Data Readiness Validator" subtitle="Assess source-system data quality before migration" badge="v1.3">
-        <Link href="/data-readiness/settings" className="px-3 py-1.5 text-sm text-slate-600 hover:text-slate-900 border border-slate-200 rounded-lg">Settings</Link>
-        {step === "results" && <ExportPDFButton targetId="readiness-report" filename={"readiness-" + systemId + "-" + Date.now() + ".pdf"} />}
-      </Header>
-      <div className="max-w-5xl mx-auto px-6 py-6 no-print">
-        <ol className="flex items-center gap-2 mb-6 flex-wrap">
-          {steps.map((s, i) => (
-            <li key={s} className="flex items-center gap-2 flex-1 min-w-[100px]">
-              <span className={"w-7 h-7 rounded-full text-xs font-semibold flex items-center justify-center " + (i <= stepIdx ? "bg-emerald-600 text-white" : "bg-slate-200 text-slate-500")}>{i + 1}</span>
-              <span className={"text-xs " + (i === stepIdx ? "font-semibold text-slate-900" : "text-slate-500")}>{s}</span>
-              {i < steps.length - 1 && <span className="flex-1 h-0.5 bg-slate-200" />}
-            </li>
-          ))}
-        </ol>
-        {error && <div className="mb-4 rounded-lg bg-red-50 border border-red-200 text-red-800 px-4 py-3 text-sm">Error: {error}</div>}
+    <button
+      type="button"
+      onClick={onClick}
+      className={`text-left rounded-2xl border-2 p-5 transition-all ${
+        active
+          ? `border-emerald-500 bg-emerald-50/50 shadow-md`
+          : 'border-slate-200 hover:border-emerald-300 hover:shadow-sm bg-white'
+      }`}
+    >
+      <div className="flex items-center gap-3">
+        <div
+          className="w-11 h-11 rounded-xl flex items-center justify-center shadow-sm"
+          style={{ background: sys.hex, color: '#fff' }}
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
+               stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
+               className="w-6 h-6">
+            <path d="M18 10h-1.26A8 8 0 109 20h9a5 5 0 000-10z" />
+          </svg>
+        </div>
+        <div>
+          <h3 className="text-lg font-bold text-slate-900">{sys.name}</h3>
+          <p className="text-xs text-slate-500">{Object.keys(sys.objects).length} objects available</p>
+        </div>
       </div>
-      <div className="max-w-5xl mx-auto px-6 pb-12 space-y-6">
-        {step === "select" && <SystemSelector config={config} onPick={id => { setSystemId(id); setStep("connection"); setConsoleLogs([]); }} />}
-        {step === "connection" && systemId && (
-          <div className="space-y-6">
-            <SavedConnections systemId={systemId} onUse={c => { setCreds(c); fetchMetadata(c); }} />
-            <CredentialsForm systemId={systemId} config={config} onTestLogs={appendLogs} onSubmit={(c, saveIt, name) => { if (saveIt && name) addConnection(systemId, name, c); setCreds(c); fetchMetadata(c); }} onBack={() => setStep("select")} />
+      <p className="mt-3 text-sm text-slate-600">{sys.description}</p>
+    </button>
+  );
+}
+
+function CheckCard({
+  checkKey, active, disabled, onClick
+}: { checkKey: CheckKey; active: boolean; disabled?: boolean; onClick: () => void }) {
+  const chk = CAT.checks[checkKey];
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={disabled}
+      className={`text-left rounded-2xl border-2 p-4 transition-all ${
+        active
+          ? 'border-emerald-500 bg-emerald-50/50 shadow-md'
+          : disabled
+            ? 'border-slate-100 bg-slate-50 opacity-50 cursor-not-allowed'
+            : 'border-slate-200 hover:border-emerald-300 hover:shadow-sm bg-white'
+      }`}
+    >
+      <div className="flex items-center gap-2 mb-1">
+        <span className="chip bg-emerald-100 text-emerald-700 text-[10px]">{chk.shortName}</span>
+      </div>
+      <h3 className="text-sm font-bold text-slate-900">{chk.name}</h3>
+      <p className="mt-1 text-xs text-slate-500 leading-snug">{chk.description}</p>
+    </button>
+  );
+}
+
+export default function DataReadinessPage() {
+  const [system, setSystem] = useState<SystemKey | null>(null);
+  const [checkType, setCheckType] = useState<CheckKey | null>(null);
+  const [objectName, setObjectName] = useState<string | null>(null);
+  const [fieldName, setFieldName] = useState<string | null>(null);
+  const [result, setResult] = useState<CheckResult | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const currentStep = useMemo(() => {
+    if (result) return 3;
+    if (system && checkType && objectName && fieldName) return 2; // ready to run
+    if (system && checkType) return 2;
+    if (system) return 1;
+    return 0;
+  }, [system, checkType, objectName, fieldName, result]);
+
+  const systemObj = system ? CAT.systems[system] : null;
+  const currentCheck = checkType ? CAT.checks[checkType] : null;
+  const objectDef = system && objectName ? CAT.systems[system].objects[objectName] : null;
+  const fieldDef = objectDef && fieldName ? objectDef.fields[fieldName] : null;
+
+  const objectItems = useMemo(() => {
+    if (!systemObj) return [];
+    return Object.entries(systemObj.objects).map(([key, o]) => ({
+      value: key,
+      label: o.label,
+      description: o.description,
+      badge: `${Object.keys(o.fields).length} fields`
+    }));
+  }, [systemObj]);
+
+  const fieldItems = useMemo(() => {
+    if (!objectDef || !currentCheck) return [];
+    return Object.entries(objectDef.fields)
+      .filter(([, f]) => currentCheck.appliesToTypes.includes(f.type as any))
+      .map(([key, f]) => ({
+        value: key,
+        label: f.label,
+        description: `${key} · ${f.description}`,
+        badge: f.type
+      }));
+  }, [objectDef, currentCheck]);
+
+  // Reset downstream state when parent changes
+  function chooseSystem(s: SystemKey) {
+    setSystem(s);
+    setCheckType(null);
+    setObjectName(null);
+    setFieldName(null);
+    setResult(null);
+    setError(null);
+  }
+  function chooseCheck(c: CheckKey) {
+    setCheckType(c);
+    setFieldName(null);
+    setResult(null);
+    setError(null);
+  }
+  function chooseObject(v: string | null) {
+    setObjectName(v);
+    setFieldName(null);
+    setResult(null);
+  }
+  function chooseField(v: string | null) {
+    setFieldName(v);
+    setResult(null);
+  }
+
+  function startOver() {
+    setSystem(null);
+    setCheckType(null);
+    setObjectName(null);
+    setFieldName(null);
+    setResult(null);
+    setError(null);
+  }
+
+  async function runCheck() {
+    if (!system || !checkType || !objectName || !fieldName) return;
+    setLoading(true);
+    setError(null);
+    setResult(null);
+    try {
+      const resp = await fetch('/api/data-readiness/check', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ system, checkType, object: objectName, field: fieldName })
+      });
+      if (!resp.ok) {
+        const j = await resp.json().catch(() => ({}));
+        throw new Error(j.error || `HTTP ${resp.status}`);
+      }
+      const j = await resp.json();
+      setResult(j.result as CheckResult);
+    } catch (e: any) {
+      setError(e?.message ?? 'Check failed');
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  const canRun = !!(system && checkType && objectName && fieldName) && !loading;
+
+  return (
+    <main className="min-h-screen">
+      <Header />
+
+      <div className="max-w-5xl mx-auto px-4 sm:px-6 py-6">
+        <div className="mb-6">
+          <div className="flex items-center gap-2 text-xs text-slate-500">
+            <Link href="/" className="hover:text-slate-900">Home</Link>
+            <span>/</span>
+            <span className="text-slate-700 font-medium">Data Readiness</span>
           </div>
-        )}
-        {step === "metadata" && systemId && <ObjectSelector systemId={systemId} config={config} objects={objects} loading={loadingMeta} onNext={objs => { setSelectedObjectNames(objs); setStep("rules"); }} onBack={() => setStep("connection")} />}
-        {step === "rules" && systemId && <RulesBuilder systemId={systemId} config={config} credentials={creds} metadataObjects={rulesEligibleObjects} onRun={runAnalysis} onBack={() => setStep("metadata")} onFetchLogs={appendLogs} />}
-        {step === "running" && systemId && <AnalysisProgress systemId={systemId} config={config} />}
-        {step === "results" && report && (
-          <div id="readiness-report">
-            <ReadinessResults report={report} />
-            <div className="no-print mt-6 flex justify-between">
-              <button onClick={() => { setStep("select"); setSystemId(null); setReport(null); setCreds({}); setObjects([]); setSelectedObjectNames([]); setConsoleLogs([]); }} className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-sm font-medium rounded-lg">Start Over</button>
-              <button onClick={() => setStep("rules")} className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-sm font-medium rounded-lg">Re-configure Rules</button>
+          <h1 className="mt-2 text-2xl font-bold text-slate-900">Data Readiness Assessment</h1>
+          <p className="text-sm text-slate-600 mt-1">
+            Assess source-system data quality before ingesting into Salesforce Data Cloud.
+            Pick a system, choose a check, then select an object &amp; field to run.
+          </p>
+        </div>
+
+        <div className="mb-6">
+          <StepIndicator
+            steps={STEPS}
+            currentIndex={currentStep}
+          />
+        </div>
+
+        {/* STEP 1: system */}
+        {!system ? (
+          <section>
+            <h2 className="text-lg font-semibold text-slate-900 mb-3">
+              1. Select a source system
+            </h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {(Object.keys(CAT.systems) as SystemKey[]).map((s) => (
+                <SystemCard key={s} systemKey={s} active={false} onClick={() => chooseSystem(s)} />
+              ))}
             </div>
+          </section>
+        ) : null}
+
+        {/* Selected system summary */}
+        {system ? (
+          <div className="card p-4 mb-4 flex items-center justify-between flex-wrap gap-3">
+            <div className="flex items-center gap-3">
+              <div
+                className="w-8 h-8 rounded-lg flex items-center justify-center"
+                style={{ background: CAT.systems[system].hex, color: '#fff' }}
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
+                     stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
+                     className="w-4 h-4">
+                  <path d="M18 10h-1.26A8 8 0 109 20h9a5 5 0 000-10z" />
+                </svg>
+              </div>
+              <div>
+                <div className="text-[10px] font-semibold uppercase tracking-wide text-slate-500">System</div>
+                <div className="text-sm font-semibold text-slate-900">{CAT.systems[system].name}</div>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={() => { chooseSystem(system); setSystem(null); }}
+              className="text-xs text-slate-500 hover:text-rose-600 underline"
+            >
+              Change system
+            </button>
           </div>
-        )}
-        {systemId && step !== "results" && (<div className="no-print"><BackendConsole logs={consoleLogs} title={"Live backend console - " + systemId} onClear={clearConsole} /></div>)}
+        ) : null}
+
+        {/* STEP 2: check */}
+        {system && !checkType ? (
+          <section>
+            <h2 className="text-lg font-semibold text-slate-900 mb-3">
+              2. Select a data quality check
+            </h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+              {(Object.keys(CAT.checks) as CheckKey[]).map((c) => (
+                <CheckCard key={c} checkKey={c} active={false} onClick={() => chooseCheck(c)} />
+              ))}
+            </div>
+          </section>
+        ) : null}
+
+        {/* Selected check summary */}
+        {system && checkType ? (
+          <div className="card p-4 mb-4 flex items-center justify-between flex-wrap gap-3">
+            <div className="flex items-start gap-3 flex-1 min-w-0">
+              <span className="chip bg-emerald-100 text-emerald-700 shrink-0">
+                {CAT.checks[checkType].shortName}
+              </span>
+              <div className="min-w-0">
+                <div className="text-[10px] font-semibold uppercase tracking-wide text-slate-500">Check</div>
+                <div className="text-sm font-semibold text-slate-900">{CAT.checks[checkType].name}</div>
+                <p className="text-[11px] text-slate-500 mt-0.5 leading-snug">{CAT.checks[checkType].description}</p>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={() => { setCheckType(null); setFieldName(null); setResult(null); }}
+              className="text-xs text-slate-500 hover:text-rose-600 underline shrink-0"
+            >
+              Change check
+            </button>
+          </div>
+        ) : null}
+
+        {/* STEP 3: object + field */}
+        {system && checkType ? (
+          <section className="card p-5 mb-4">
+            <h2 className="text-lg font-semibold text-slate-900 mb-3">
+              3. Choose the object &amp; field to check
+            </h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <SearchableSelect
+                label={`${CAT.systems[system].name} object`}
+                placeholder="Start typing an object name..."
+                items={objectItems}
+                value={objectName}
+                onChange={chooseObject}
+                emptyMessage="No matching objects"
+              />
+              <SearchableSelect
+                label="Field"
+                placeholder={objectName ? 'Start typing a field name...' : 'Select an object first'}
+                items={fieldItems}
+                value={fieldName}
+                onChange={chooseField}
+                disabled={!objectName}
+                emptyMessage={
+                  objectName
+                    ? `No fields on ${objectName} match "${CAT.checks[checkType].name}"`
+                    : 'Pick an object first'
+                }
+              />
+            </div>
+
+            {fieldDef ? (
+              <div className="mt-4 rounded-lg border border-emerald-100 bg-emerald-50/50 p-3 text-xs text-slate-700">
+                <strong>{fieldDef.label}</strong>
+                <span className="ml-1 chip bg-white text-slate-600 border border-slate-200">
+                  {fieldDef.type}
+                </span>
+                <p className="mt-1 text-slate-600">{fieldDef.description}</p>
+              </div>
+            ) : null}
+
+            <div className="mt-5 flex items-center justify-between flex-wrap gap-3">
+              <button
+                type="button"
+                onClick={startOver}
+                className="text-sm text-slate-500 hover:text-rose-600 underline"
+              >
+                Start over
+              </button>
+              <button
+                type="button"
+                onClick={runCheck}
+                disabled={!canRun}
+                className={`inline-flex items-center gap-2 px-5 py-2.5 rounded-xl font-semibold text-sm transition-colors ${
+                  canRun
+                    ? 'bg-gradient-to-br from-emerald-500 to-teal-500 text-white shadow hover:shadow-md'
+                    : 'bg-slate-100 text-slate-400 cursor-not-allowed'
+                }`}
+              >
+                {loading ? (
+                  <>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="w-4 h-4 animate-spin">
+                      <path d="M21 12a9 9 0 11-6.219-8.56" strokeLinecap="round" />
+                    </svg>
+                    Running check...
+                  </>
+                ) : (
+                  <>
+                    Run check
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4">
+                      <polygon points="5 3 19 12 5 21 5 3" />
+                    </svg>
+                  </>
+                )}
+              </button>
+            </div>
+
+            {error ? (
+              <div className="mt-3 rounded-lg border border-rose-200 bg-rose-50 p-3 text-xs text-rose-700">
+                {error}
+              </div>
+            ) : null}
+          </section>
+        ) : null}
+
+        {/* STEP 4: results */}
+        {result ? (
+          <section>
+            <div className="flex items-center justify-between mb-3">
+              <h2 className="text-lg font-semibold text-slate-900">4. Results</h2>
+              <button
+                type="button"
+                onClick={startOver}
+                className="text-xs text-emerald-600 hover:underline"
+              >
+                Run another check
+              </button>
+            </div>
+            <CheckResults result={result} />
+          </section>
+        ) : null}
       </div>
     </main>
   );

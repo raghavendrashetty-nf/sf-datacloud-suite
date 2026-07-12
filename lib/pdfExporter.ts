@@ -1,25 +1,32 @@
-"use client";
-import jsPDF from "jspdf";
-import html2canvas from "html2canvas";
-export async function exportElementToPDF(elementId: string, filename: string) {
-  const el = document.getElementById(elementId);
-  if (!el) throw new Error("Element #" + elementId + " not found");
-  const canvas = await html2canvas(el, { scale: 2, backgroundColor: "#ffffff", useCORS: true, logging: false });
-  const imgData = canvas.toDataURL("image/png");
-  const pdf = new jsPDF({ orientation: "portrait", unit: "pt", format: "a4" });
-  const pageW = pdf.internal.pageSize.getWidth();
-  const pageH = pdf.internal.pageSize.getHeight();
-  const imgW = pageW - 40;
-  const imgH = (canvas.height * imgW) / canvas.width;
-  let heightLeft = imgH;
-  let position = 20;
-  pdf.addImage(imgData, "PNG", 20, position, imgW, imgH);
-  heightLeft -= (pageH - 40);
+'use client';
+
+export async function exportElementToPDF(el: HTMLElement, filename: string) {
+  const html2canvas = (await import('html2canvas')).default;
+  const jsPDFmod: any = await import('jspdf');
+  const JsPDFCtor = jsPDFmod.jsPDF ?? jsPDFmod.default;
+
+  const canvas = await html2canvas(el, {
+    scale: 2, backgroundColor: '#ffffff', useCORS: true, windowWidth: el.scrollWidth
+  });
+
+  const pdf = new JsPDFCtor({ orientation: 'p', unit: 'mm', format: 'a4' });
+  const pageWidth = pdf.internal.pageSize.getWidth();
+  const pageHeight = pdf.internal.pageSize.getHeight();
+  const imgWidth = pageWidth;
+  const imgHeight = (canvas.height * imgWidth) / canvas.width;
+
+  let heightLeft = imgHeight;
+  let position = 0;
+  const imgData = canvas.toDataURL('image/png');
+
+  pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+  heightLeft -= pageHeight;
+
   while (heightLeft > 0) {
-    position = 20 - (imgH - heightLeft);
+    position = heightLeft - imgHeight;
     pdf.addPage();
-    pdf.addImage(imgData, "PNG", 20, position, imgW, imgH);
-    heightLeft -= (pageH - 40);
+    pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+    heightLeft -= pageHeight;
   }
   pdf.save(filename);
 }

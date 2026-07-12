@@ -1,30 +1,82 @@
-export type EnvironmentId = "Production" | "Sandbox";
-export type PhaseId = "ingestion" | "harmonization" | "realtime" | "insights" | "act" | "activation";
-export type FrequencyId = "streaming" | "hourly" | "every6h" | "every12h" | "daily" | "weekly" | "batch" | "onDemand" | "triggered";
+export type Environment = 'Production' | 'Sandbox';
+export type Period = 'day' | 'week' | 'month' | 'year';
+
+export type PhaseKey = string;
+
+export interface RateItem {
+  key: string;
+  phase: PhaseKey;
+  label: string;
+  unit: string;
+  unitDivisor: number;
+  unitLabel: string;
+  unitSingular: string;
+  initialLabel: string;
+  supportsInitial: boolean;
+  credits: { Production: number; Sandbox: number };
+  description: string;
+  processingRateNote: string;
+  usageNote: string;
+}
+
+export interface RatesConfig {
+  meta: { version: string; source: string; url: string; warning?: string };
+  settings: {
+    costPerCreditUSD: number;
+    daysPerYear: number;
+    weeksPerYear: number;
+    monthsPerYear: number;
+  };
+  items: RateItem[];
+}
+
 export interface CalculatorInputs {
-  environment: EnvironmentId; splitInitialLoad: boolean; pipelines: number;
-  initialInternalRows: number; initialExternalBatchRows: number; initialUnstructuredMB: number;
-  initialPrivateConnectGB: number; initialUnifiedProfiles: number; initialInferences: number;
-  internalIngestionRowsPerDay: number; externalBatchRowsPerDay: number; externalStreamingRowsPerDay: number;
-  batchTransformRowsPerDay: number; streamingTransformRowsPerDay: number; unstructuredMBPerDay: number;
-  dataFederationRowsPerDay: number; dataShareRowsPerDay: number; privateConnectGBPerDay: number;
-  unifiedProfiles: number; matchRules: number; profileUnificationRunsPerDay: number;
-  realtimeEventsPerDay: number;
-  calcInsightsBatchCount: number; calcInsightsBatchRunsPerDay: number; calcInsightsStreamingCount: number; inferencesPerDay: number;
-  dataQueriesRowsPerDay: number; streamingActionsRowsPerDay: number;
-  segmentRowsPerDay: number; batchActivationRowsPerDay: number; streamingActivationRowsPerDay: number;
+  environment: Environment;
+  costPerCreditUSD: number;
   overheadPct: number;
+  itemVolumes: Record<string, number>;
+  itemInitials: Record<string, number>;
+  itemPeriods: Record<string, Period>;
 }
-export interface LineItemResult {
-  key: string; label: string; phase: PhaseId; unit: string;
-  initialCredits: number; initialCostUSD: number;
-  incrementalCreditsPerYear: number; incrementalCostPerYearUSD: number;
-  applicableToInitialLoad: boolean;
+
+export interface ItemResult {
+  key: string;
+  effectivePeriod: Period;
+  dailyCredits: number;
+  weeklyCredits: number;
+  monthlyCredits: number;
+  annualCredits: number;
+  initialCredits: number;
+  dailyCostUSD: number;
+  weeklyCostUSD: number;
+  monthlyCostUSD: number;
+  annualCostUSD: number;
+  initialCostUSD: number;
 }
-export interface PhaseTotals { credits: number; costUSD: number; label: string; color: string; }
+
+export interface PhaseTotal {
+  phase: PhaseKey;
+  annualCredits: number;
+  annualCostUSD: number;
+  initialCredits: number;
+  initialCostUSD: number;
+}
+
 export interface CalculationResult {
-  lineItems: LineItemResult[];
-  byPhaseInitial: Record<PhaseId, PhaseTotals>;
-  byPhaseIncremental: Record<PhaseId, PhaseTotals>;
-  totals: { initialCredits: number; initialCostUSD: number; incrementalCreditsPerYear: number; incrementalCostPerYearUSD: number; monthlyIncrementalCostUSD: number; grandTotalCostUSD: number; };
+  perItem: Record<string, ItemResult>;
+  totals: {
+    dailyCredits: number;
+    weeklyCredits: number;
+    monthlyCredits: number;
+    annualCredits: number;
+    initialCredits: number;
+    dailyCostUSD: number;
+    weeklyCostUSD: number;
+    monthlyCostUSD: number;
+    annualCostUSD: number;
+    initialCostUSD: number;
+    firstYearGrandTotalUSD: number;
+    firstYearGrandTotalCredits: number;
+  };
+  perPhase: PhaseTotal[];
 }
