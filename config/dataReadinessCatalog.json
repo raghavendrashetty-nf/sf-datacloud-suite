@@ -38,7 +38,7 @@
     "completeness": {
       "name": "Completeness Score",
       "shortName": "Completeness",
-      "description": "Overall completeness score for the selected field (weighted by NULL, empty, and default-value ratios).",
+      "description": "Overall completeness score for the selected field.",
       "appliesToTypes": [
         "string",
         "email",
@@ -59,7 +59,7 @@
     "value_distribution": {
       "name": "Value Distribution",
       "shortName": "Distribution",
-      "description": "Top values, cardinality, and frequency histogram for the selected field.",
+      "description": "Top values, cardinality, and frequency histogram.",
       "appliesToTypes": [
         "string",
         "picklist",
@@ -78,7 +78,7 @@
     "format_validation": {
       "name": "Format Validation",
       "shortName": "Format",
-      "description": "Validate the format of the field (email address, phone number, or URL) and report invalid rows.",
+      "description": "Validate the format (email / phone / URL) and report invalid rows.",
       "appliesToTypes": [
         "email",
         "phone",
@@ -99,7 +99,7 @@
   "systems": {
     "salesforce": {
       "name": "Salesforce",
-      "description": "Salesforce Sales / Service / Custom objects (Production or Sandbox org).",
+      "description": "Salesforce Sales / Service / Custom objects.",
       "color": "sky",
       "hex": "#0ea5e9",
       "icon": "cloud",
@@ -121,7 +121,7 @@
             "Type": {
               "label": "Type",
               "type": "picklist",
-              "description": "Account type (Customer, Prospect, etc.)"
+              "description": "Account type"
             },
             "BillingCountry": {
               "label": "Billing Country",
@@ -218,7 +218,7 @@
         },
         "Lead": {
           "label": "Lead",
-          "description": "Prospective customers not yet converted into an Account/Contact.",
+          "description": "Prospective customers.",
           "fields": {
             "Company": {
               "label": "Company",
@@ -253,7 +253,7 @@
             "Rating": {
               "label": "Rating",
               "type": "picklist",
-              "description": "Lead rating (Hot/Warm/Cold)"
+              "description": "Lead rating"
             },
             "Country": {
               "label": "Country",
@@ -304,7 +304,7 @@
             "Origin": {
               "label": "Origin",
               "type": "picklist",
-              "description": "Case origin (Phone, Web, Email)"
+              "description": "Case origin"
             },
             "Type": {
               "label": "Type",
@@ -330,7 +330,7 @@
         },
         "Opportunity": {
           "label": "Opportunity",
-          "description": "Sales opportunities being pursued.",
+          "description": "Sales opportunities.",
           "fields": {
             "Name": {
               "label": "Name",
@@ -417,7 +417,7 @@
         },
         "FeedItem": {
           "label": "Feed Item",
-          "description": "Chatter feed post (also used for Case Comments migration).",
+          "description": "Chatter feed post.",
           "fields": {
             "Body": {
               "label": "Body",
@@ -442,7 +442,7 @@
             "Title": {
               "label": "Title",
               "type": "string",
-              "description": "Feed title (often used for Comment ID during migration)"
+              "description": "Feed title"
             },
             "IsRichText": {
               "label": "Is Rich Text",
@@ -488,17 +488,17 @@
             "Requester_Email__c": {
               "label": "Requester Email",
               "type": "email",
-              "description": "Original requester email"
+              "description": "Requester email"
             },
             "Requester_Phone__c": {
               "label": "Requester Phone",
               "type": "phone",
-              "description": "Original requester phone"
+              "description": "Requester phone"
             },
             "Created_Date_Zendesk__c": {
               "label": "Zendesk Created Date",
               "type": "date",
-              "description": "Original creation date in Zendesk"
+              "description": "Original creation date"
             }
           }
         }
@@ -506,7 +506,7 @@
     },
     "zendesk": {
       "name": "Zendesk",
-      "description": "Zendesk Support / Chat / Sell source system.",
+      "description": "Zendesk Support source system.",
       "color": "emerald",
       "hex": "#10b981",
       "icon": "headphones",
@@ -533,32 +533,32 @@
             "status": {
               "label": "Status",
               "type": "picklist",
-              "description": "new, open, pending, hold, solved, closed"
+              "description": "Ticket status"
             },
             "priority": {
               "label": "Priority",
               "type": "picklist",
-              "description": "low, normal, high, urgent"
+              "description": "Ticket priority"
             },
             "type": {
               "label": "Type",
               "type": "picklist",
-              "description": "problem, incident, question, task"
+              "description": "Ticket type"
             },
             "requester_id": {
               "label": "Requester ID",
               "type": "reference",
-              "description": "User who submitted the ticket"
+              "description": "User who submitted"
             },
             "assignee_id": {
               "label": "Assignee ID",
               "type": "reference",
-              "description": "User assigned to the ticket"
+              "description": "User assigned"
             },
             "organization_id": {
               "label": "Organization ID",
               "type": "reference",
-              "description": "Requester's organization"
+              "description": "Requester organization"
             },
             "tags": {
               "label": "Tags",
@@ -569,7 +569,7 @@
         },
         "User": {
           "label": "User",
-          "description": "Zendesk end-users, agents, and admins.",
+          "description": "Zendesk users.",
           "fields": {
             "id": {
               "label": "ID",
@@ -579,7 +579,7 @@
             "email": {
               "label": "Email",
               "type": "email",
-              "description": "Primary email address"
+              "description": "Primary email"
             },
             "name": {
               "label": "Name",
@@ -610,12 +610,12 @@
         },
         "Organization": {
           "label": "Organization",
-          "description": "Zendesk organizations (companies).",
+          "description": "Zendesk organizations.",
           "fields": {
             "id": {
               "label": "ID",
               "type": "int",
-              "description": "Unique organization ID"
+              "description": "Unique org ID"
             },
             "name": {
               "label": "Name",
@@ -625,7 +625,7 @@
             "domain_names": {
               "label": "Domain Names",
               "type": "array",
-              "description": "Email domains that map to the org"
+              "description": "Email domains"
             },
             "tags": {
               "label": "Tags",
@@ -641,7 +641,7 @@
         },
         "Comment": {
           "label": "Comment",
-          "description": "Ticket comments (public replies and private notes).",
+          "description": "Ticket comments.",
           "fields": {
             "id": {
               "label": "ID",
@@ -656,22 +656,17 @@
             "author_id": {
               "label": "Author ID",
               "type": "reference",
-              "description": "User who wrote the comment"
+              "description": "User who wrote it"
             },
             "body": {
               "label": "Body",
               "type": "text",
               "description": "Comment body"
             },
-            "html_body": {
-              "label": "HTML Body",
-              "type": "text",
-              "description": "HTML-formatted body"
-            },
             "public": {
               "label": "Public",
               "type": "boolean",
-              "description": "Public comment vs internal note"
+              "description": "Public vs internal"
             }
           }
         }

@@ -1,9 +1,7 @@
 import type { PhaseKey } from '@/lib/types';
 
 export interface PhaseTheme {
-  key: PhaseKey;
-  order: number;
-  label: string;
+  key: PhaseKey; order: number; label: string;
   color: 'sky' | 'indigo' | 'rose' | 'violet' | 'emerald' | 'amber' | 'cyan' | 'slate';
   hex: string;
 }
@@ -18,12 +16,8 @@ export const PHASES: PhaseTheme[] = [
   { key: 'compute',       order: 7, label: 'Compute',                           color: 'cyan',    hex: '#06b6d4' }
 ];
 
-const FALLBACK: PhaseTheme = {
-  key: '__custom__', order: 99, label: 'Custom Phase', color: 'slate', hex: '#64748b'
-};
+const FALLBACK: PhaseTheme = { key: '__custom__', order: 99, label: 'Custom Phase', color: 'slate', hex: '#64748b' };
 
 export function getPhaseTheme(key: PhaseKey): PhaseTheme {
-  const found = PHASES.find((p) => p.key === key);
-  if (found) return found;
-  return { ...FALLBACK, key, label: key || FALLBACK.label };
+  return PHASES.find((p) => p.key === key) ?? { ...FALLBACK, key, label: key || FALLBACK.label };
 }

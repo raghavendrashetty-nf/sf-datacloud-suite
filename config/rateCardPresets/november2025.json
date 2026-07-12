@@ -1,7 +1,7 @@
 {
   "name": "November 2025 (current default)",
   "meta": {
-    "version": "4.2",
+    "version": "4.5",
     "source": "Salesforce Data Cloud Platform Services Rate Sheet (Nov 2025)",
     "url": "https://www.salesforce.com/en-us/wp-content/uploads/sites/4/documents/platform/New-Nov25-DataCloud-PlatformServices.pdf"
   },
@@ -26,9 +26,9 @@
         "Production": 0,
         "Sandbox": 0
       },
-      "description": "Rows moved between Data Cloud objects internally (no external ingestion cost).",
+      "description": "Rows moved between Data Cloud objects internally.",
       "processingRateNote": "Per 1,000,000 rows processed",
-      "usageNote": "Charged when rows flow between Data Cloud DMOs/DLOs internally."
+      "usageNote": "Free \u2014 no credits are charged."
     },
     {
       "key": "externalBatchIngestion",
@@ -44,9 +44,9 @@
         "Production": 2000,
         "Sandbox": 1600
       },
-      "description": "Rows ingested from external systems via batch connectors (SFTP, S3, Snowflake, etc.).",
+      "description": "Rows ingested via batch connectors.",
       "processingRateNote": "Per 1,000,000 rows processed",
-      "usageNote": "Applies to batch connectors and scheduled data pipelines pulling from external sources."
+      "usageNote": "Applies to batch connectors."
     },
     {
       "key": "externalStreamingIngestion",
@@ -62,9 +62,9 @@
         "Production": 5000,
         "Sandbox": 4000
       },
-      "description": "Rows ingested via real-time streaming connectors (Kafka, webhooks, event APIs).",
+      "description": "Rows ingested via real-time streaming connectors.",
       "processingRateNote": "Per 1,000,000 rows processed",
-      "usageNote": "Higher rate than batch due to always-on ingestion infrastructure."
+      "usageNote": "Higher rate than batch."
     },
     {
       "key": "batchDataTransforms",
@@ -80,9 +80,9 @@
         "Production": 400,
         "Sandbox": 320
       },
-      "description": "Rows transformed via scheduled batch data prep and Data Transforms.",
+      "description": "Rows transformed via batch data prep.",
       "processingRateNote": "Per 1,000,000 rows processed",
-      "usageNote": "Applies to batch data prep recipes and SQL Data Transforms."
+      "usageNote": "Applies to batch data prep."
     },
     {
       "key": "streamingDataTransforms",
@@ -98,9 +98,9 @@
         "Production": 5000,
         "Sandbox": 4000
       },
-      "description": "Rows transformed in real-time via streaming Data Transforms.",
+      "description": "Rows transformed in real-time.",
       "processingRateNote": "Per 1,000,000 rows processed",
-      "usageNote": "Higher rate reflects always-on streaming compute for transformations."
+      "usageNote": "Higher rate for streaming."
     },
     {
       "key": "unstructuredDataProcessed",
@@ -116,9 +116,9 @@
         "Production": 60,
         "Sandbox": 48
       },
-      "description": "Unstructured content (PDFs, text, images) chunked and vectorized for AI use cases.",
+      "description": "Unstructured content chunked and vectorized.",
       "processingRateNote": "Per 1 megabyte processed",
-      "usageNote": "Applies to Search Index and unstructured data lakes for Einstein / Agentforce."
+      "usageNote": "For AI use cases."
     },
     {
       "key": "dataFederationRows",
@@ -134,9 +134,9 @@
         "Production": 70,
         "Sandbox": 56
       },
-      "description": "Zero-copy rows federated from Snowflake, BigQuery, Databricks, Redshift, etc.",
+      "description": "Zero-copy rows federated.",
       "processingRateNote": "Per 1,000,000 rows processed",
-      "usageNote": "No storage cost - data stays in source warehouse; charged per row read."
+      "usageNote": "No storage cost."
     },
     {
       "key": "dataShareRowsOut",
@@ -152,9 +152,9 @@
         "Production": 800,
         "Sandbox": 640
       },
-      "description": "Rows shared out of Data Cloud to external consumers via Data Share.",
+      "description": "Rows shared out via Data Share.",
       "processingRateNote": "Per 1,000,000 rows processed",
-      "usageNote": "Applies to zero-copy sharing to Snowflake / BigQuery / Databricks recipients."
+      "usageNote": "Zero-copy sharing."
     },
     {
       "key": "privateConnectGB",
@@ -170,9 +170,9 @@
         "Production": 500,
         "Sandbox": 400
       },
-      "description": "Data moved over Private Connect (AWS PrivateLink) instead of the public internet.",
+      "description": "Data moved via Private Connect.",
       "processingRateNote": "Per 1 gigabyte processed",
-      "usageNote": "Applies to secure private network egress/ingress via Private Connect."
+      "usageNote": "Private network egress/ingress."
     },
     {
       "key": "profileUnification",
@@ -188,9 +188,9 @@
         "Production": 100000,
         "Sandbox": 80000
       },
-      "description": "Identity resolution runs that unify individual profiles across sources.",
+      "description": "Identity resolution runs.",
       "processingRateNote": "Per 1,000,000 rows processed",
-      "usageNote": "Charged each time the identity resolution ruleset is executed on the source rows."
+      "usageNote": "Charged per identity resolution."
     },
     {
       "key": "matchReconRules",
@@ -206,9 +206,9 @@
         "Production": 5000,
         "Sandbox": 4000
       },
-      "description": "Rows processed by additional match / reconciliation rule executions.",
+      "description": "Match / reconciliation rules.",
       "processingRateNote": "Per 1,000,000 rows processed",
-      "usageNote": "Complementary to Profile Unification for advanced fuzzy-match scenarios."
+      "usageNote": "Complementary to Profile Unification."
     },
     {
       "key": "realtimeEvents",
@@ -224,9 +224,9 @@
         "Production": 70000,
         "Sandbox": 56000
       },
-      "description": "End-to-end real-time events flowing through Data Cloud (ingest to activation).",
+      "description": "End-to-end real-time events.",
       "processingRateNote": "Per 1,000,000 events processed",
-      "usageNote": "Highest-value use case - covers full E2E real-time processing SLA."
+      "usageNote": "E2E real-time SLA."
     },
     {
       "key": "calculatedInsightsBatch",
@@ -242,9 +242,9 @@
         "Production": 15,
         "Sandbox": 12
       },
-      "description": "Rows processed by scheduled Calculated Insights (metric aggregations).",
+      "description": "Scheduled Calculated Insights.",
       "processingRateNote": "Per 1,000,000 rows processed",
-      "usageNote": "Very low rate - designed for large batch aggregations."
+      "usageNote": "Batch aggregations."
     },
     {
       "key": "calculatedInsightsStreaming",
@@ -260,9 +260,9 @@
         "Production": 800,
         "Sandbox": 640
       },
-      "description": "Rows processed by real-time streaming Calculated Insights.",
+      "description": "Streaming Calculated Insights.",
       "processingRateNote": "Per 1,000,000 rows processed",
-      "usageNote": "Higher rate reflects real-time metric compute."
+      "usageNote": "Real-time metric compute."
     },
     {
       "key": "inferences",
@@ -278,9 +278,9 @@
         "Production": 3500,
         "Sandbox": 2800
       },
-      "description": "Predictions or generative AI inferences (Einstein / Model Builder) executed on Data Cloud data.",
+      "description": "Predictions / generative AI inferences.",
       "processingRateNote": "Per 1,000,000 inferences",
-      "usageNote": "Applies to both classical ML predictions and generative model calls scored on DMOs."
+      "usageNote": "ML predictions or LLM calls."
     },
     {
       "key": "dataQueries",
@@ -296,9 +296,9 @@
         "Production": 2,
         "Sandbox": 1.6
       },
-      "description": "Ad-hoc query API rows returned to Marketing Cloud, MC Personalization, Sales/Service, etc.",
+      "description": "Query API rows returned.",
       "processingRateNote": "Per 1,000,000 rows processed",
-      "usageNote": "Charged per row returned across Query API, SQL, and Personalization retrievals."
+      "usageNote": "Charged per row returned."
     },
     {
       "key": "streamingActions",
@@ -314,9 +314,9 @@
         "Production": 800,
         "Sandbox": 640
       },
-      "description": "Real-time Data Actions triggered from Data Cloud (webhook, Flow, MuleSoft, Journey).",
-      "processingRateNote": "Per 1,000,000 actions triggered",
-      "usageNote": "Applies to Data Action Targets - one credit event per action fired."
+      "description": "Real-time Data Actions.",
+      "processingRateNote": "Per 1,000,000 actions",
+      "usageNote": "Data Action Targets."
     },
     {
       "key": "segmentRowsProcessed",
@@ -332,9 +332,9 @@
         "Production": 20,
         "Sandbox": 16
       },
-      "description": "Rows evaluated when a segment or attribute filter is published.",
+      "description": "Segment / filter rows.",
       "processingRateNote": "Per 1,000,000 rows processed",
-      "usageNote": "Charged per segment publish job over the underlying population."
+      "usageNote": "Per segment publish job."
     },
     {
       "key": "batchActivation",
@@ -350,9 +350,9 @@
         "Production": 10,
         "Sandbox": 8
       },
-      "description": "Rows activated to batch destinations (Marketing Cloud lists, Ads audiences, SFTP files).",
+      "description": "Batch destination activation.",
       "processingRateNote": "Per 1,000,000 rows processed",
-      "usageNote": "Very low rate - designed for high-volume batch audience delivery."
+      "usageNote": "Batch audience delivery."
     },
     {
       "key": "streamingActivation",
@@ -368,9 +368,9 @@
         "Production": 1600,
         "Sandbox": 1280
       },
-      "description": "Rows activated to real-time destinations (MC Personalization, Interaction Studio, live APIs).",
+      "description": "Real-time activation.",
       "processingRateNote": "Per 1,000,000 rows processed",
-      "usageNote": "Higher rate reflects real-time activation infrastructure."
+      "usageNote": "Real-time destinations."
     },
     {
       "key": "codeExtension",
@@ -386,9 +386,9 @@
         "Production": 40,
         "Sandbox": 32
       },
-      "description": "Custom code extensions running on Data Cloud infrastructure (DMO extensions, scheduled functions).",
+      "description": "Custom code / compute unit.",
       "processingRateNote": "Per 1 Compute Unit",
-      "usageNote": "Charged per compute unit consumed by custom code, DMO extensions, or scheduled functions. Introduced Nov 2025."
+      "usageNote": "DMO extensions or scheduled functions."
     }
   ]
 }
