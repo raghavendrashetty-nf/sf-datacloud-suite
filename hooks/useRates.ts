@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from 'react';
 import defaults from '@/config/salesforceRatesDefault.json';
 import type { RatesConfig } from '@/lib/types';
 
-export const RATES_OVERRIDE_KEY = 'sfdc.rates.override.v4.5';
+export const RATES_OVERRIDE_KEY = 'sfdc.rates.override.v4.7';
 
 function readOverlay(): Partial<RatesConfig> | null {
   try {

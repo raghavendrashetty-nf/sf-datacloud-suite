@@ -11,12 +11,12 @@ function newBlankItem(): RateItem {
   return {
     key: `custom_${Math.random().toString(36).slice(2, 8)}`,
     phase: 'ingestion', label: 'New Rate Item',
-    unit: 'Per 1,000,000 rows processed', unitDivisor: 1000000,
+    unit: 'Per 1 Million Rows Processed', unitDivisor: 1000000,
     unitLabel: 'rows', unitSingular: 'row',
     initialLabel: 'Initial Load Rows', supportsInitial: false,
     credits: { Production: 0, Sandbox: 0 },
     description: 'Describe this rate item.',
-    processingRateNote: 'Per 1,000,000 rows processed', usageNote: ''
+    processingRateNote: 'Per 1 Million Rows Processed', usageNote: ''
   };
 }
 
@@ -24,8 +24,6 @@ type Stage = 'idle' | 'extracting' | 'parsing' | 'done' | 'error';
 
 export default function RateSheetManager({ rates, onSave, onReset, onClose }: Props) {
   const [draft, setDraft] = useState<RatesConfig>(() => JSON.parse(JSON.stringify(rates)));
-  const [importText, setImportText] = useState('');
-  const [importError, setImportError] = useState<string | null>(null);
   const [pdfUrl, setPdfUrl] = useState('');
   const [stage, setStage] = useState<Stage>('idle');
   const [pdfError, setPdfError] = useState<string | null>(null);
@@ -48,24 +46,6 @@ export default function RateSheetManager({ rates, onSave, onReset, onClose }: Pr
   function removeItem(idx: number) { setDraft((d) => ({ ...d, items: d.items.filter((_, i) => i !== idx) })); }
   function loadNovemberDefault() { setDraft(JSON.parse(JSON.stringify(november2025))); }
 
-  function exportJSON() {
-    const blob = new Blob([JSON.stringify(draft, null, 2)], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url; a.download = `sf-datacloud-rates-${draft.meta.version}.json`; a.click();
-    URL.revokeObjectURL(url);
-  }
-
-  function tryImportJSON() {
-    setImportError(null);
-    try {
-      const parsedJson = JSON.parse(importText);
-      if (!Array.isArray(parsedJson.items) || parsedJson.items.length === 0) throw new Error('Missing "items" array');
-      setDraft({ meta: { ...draft.meta, ...(parsedJson.meta ?? {}) }, settings: { ...draft.settings, ...(parsedJson.settings ?? {}) }, items: parsedJson.items });
-      setImportText('');
-    } catch (e: any) { setImportError(e.message ?? 'Invalid JSON'); }
-  }
-
   async function processPdf(source: File | ArrayBuffer, sourceUrl?: string) {
     setPdfError(null); setParsed([]); setStage('extracting');
     try {
@@ -77,7 +57,6 @@ export default function RateSheetManager({ rates, onSave, onReset, onClose }: Pr
       setStage('done');
     } catch (e: any) { setPdfError(e?.message ?? 'Failed to parse PDF'); setStage('error'); }
   }
-
   async function onPdfFile(e: React.ChangeEvent<HTMLInputElement>) {
     const f = e.target.files?.[0]; if (!f) return;
     await processPdf(f);
@@ -91,7 +70,6 @@ export default function RateSheetManager({ rates, onSave, onReset, onClose }: Pr
       await processPdf(await resp.arrayBuffer(), pdfUrl);
     } catch (e: any) { setPdfError(e?.message ?? 'Fetch failed'); setStage('error'); }
   }
-
   function applyParsedItems() { if (parsed.length) setDraft((d) => ({ ...d, items: parsedToRateItems(parsed) })); }
   function save() { onSave(draft); onClose(); }
 
@@ -101,14 +79,13 @@ export default function RateSheetManager({ rates, onSave, onReset, onClose }: Pr
         <div className="p-5 border-b border-slate-200 flex items-start justify-between gap-4">
           <div>
             <h2 className="text-lg font-bold text-slate-900">Rate Sheet Manager</h2>
-            <p className="text-sm text-slate-500 mt-1">View, edit, upload, or fetch a new Salesforce Data Cloud rate sheet.</p>
+            <p className="text-sm text-slate-500 mt-1">View, edit, upload, or fetch a new rate sheet.</p>
           </div>
           <button onClick={onClose} className="text-slate-400 hover:text-slate-900 text-2xl leading-none" aria-label="Close">×</button>
         </div>
-
         <div className="p-5 space-y-6">
           <section className="rounded-xl border border-sky-100 bg-sky-50/50 p-4">
-            <h3 className="text-sm font-semibold text-slate-900 mb-2">Import from Salesforce PDF</h3>
+            <h3 className="text-sm font-semibold text-slate-900 mb-2">Import from PDF</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label className="block text-xs font-semibold text-slate-700 mb-1">Upload PDF file</label>
@@ -126,17 +103,15 @@ export default function RateSheetManager({ rates, onSave, onReset, onClose }: Pr
                 </div>
               </div>
             </div>
-            {stage === 'extracting' ? <p className="text-xs text-sky-700 mt-3">⏳ Extracting text...</p> : null}
-            {stage === 'parsing' ? <p className="text-xs text-sky-700 mt-3">⏳ Parsing rate items...</p> : null}
+            {stage === 'extracting' ? <p className="text-xs text-sky-700 mt-3">⏳ Extracting...</p> : null}
+            {stage === 'parsing' ? <p className="text-xs text-sky-700 mt-3">⏳ Parsing...</p> : null}
             {stage === 'error' && pdfError ? <p className="text-xs text-rose-600 mt-3">Error: {pdfError}</p> : null}
             {stage === 'done' ? (
-              <div className="mt-4 space-y-3">
-                <div className="flex items-center justify-between">
-                  <p className="text-xs text-emerald-700 font-semibold">✓ Parsed {parsed.length} rate items</p>
-                  <button onClick={applyParsedItems} disabled={!parsed.length} className="btn-primary text-xs py-1 px-3">
-                    Apply parsed items →
-                  </button>
-                </div>
+              <div className="mt-4 flex items-center justify-between">
+                <p className="text-xs text-emerald-700 font-semibold">✓ Parsed {parsed.length} rate items</p>
+                <button onClick={applyParsedItems} disabled={!parsed.length} className="btn-primary text-xs py-1 px-3">
+                  Apply parsed items →
+                </button>
               </div>
             ) : null}
           </section>
@@ -149,7 +124,7 @@ export default function RateSheetManager({ rates, onSave, onReset, onClose }: Pr
                 className="w-full border border-slate-300 rounded-lg px-2 py-1.5 text-sm" />
             </div>
             <div>
-              <label className="block text-xs font-semibold text-slate-600 mb-1">Rate Sheet PDF URL</label>
+              <label className="block text-xs font-semibold text-slate-600 mb-1">Rate Sheet URL</label>
               <input type="url" value={draft.meta.url}
                 onChange={(e) => setDraft((d) => ({ ...d, meta: { ...d.meta, url: e.target.value } }))}
                 className="w-full border border-slate-300 rounded-lg px-2 py-1.5 text-sm" />
@@ -171,14 +146,14 @@ export default function RateSheetManager({ rates, onSave, onReset, onClose }: Pr
               <button onClick={addItem} className="btn-ghost text-sm py-1 px-3">+ Add item</button>
             </div>
             <div className="overflow-x-auto border border-slate-200 rounded-lg">
-              <table className="min-w-[1100px] w-full text-xs">
+              <table className="min-w-[900px] w-full text-xs">
                 <thead className="bg-slate-50 text-slate-600">
                   <tr>
                     <th className="text-left px-2 py-2">Key</th>
                     <th className="text-left px-2 py-2">Phase</th>
                     <th className="text-left px-2 py-2">Label</th>
-                    <th className="text-right px-2 py-2">Prod. Credits</th>
-                    <th className="text-right px-2 py-2">Sandbox Credits</th>
+                    <th className="text-right px-2 py-2">Prod</th>
+                    <th className="text-right px-2 py-2">Sandbox</th>
                     <th></th>
                   </tr>
                 </thead>
@@ -187,12 +162,12 @@ export default function RateSheetManager({ rates, onSave, onReset, onClose }: Pr
                     <tr key={idx} className="border-t border-slate-100">
                       <td className="px-2 py-1"><input value={it.key} onChange={(e) => updateItem(idx, { key: e.target.value })} className="w-32 border border-slate-200 rounded px-1 py-1 text-xs" /></td>
                       <td className="px-2 py-1">
-                        <input list={`phases-list-${idx}`} value={it.phase} onChange={(e) => updateItem(idx, { phase: e.target.value })} className="w-32 border border-slate-200 rounded px-1 py-1 text-xs" />
+                        <input list={`phases-list-${idx}`} value={it.phase} onChange={(e) => updateItem(idx, { phase: e.target.value })} className="w-28 border border-slate-200 rounded px-1 py-1 text-xs" />
                         <datalist id={`phases-list-${idx}`}>{uniquePhases.map((p) => <option key={p} value={p} />)}</datalist>
                       </td>
-                      <td className="px-2 py-1"><input value={it.label} onChange={(e) => updateItem(idx, { label: e.target.value })} className="w-48 border border-slate-200 rounded px-1 py-1 text-xs" /></td>
-                      <td className="px-2 py-1 text-right"><input type="number" value={it.credits.Production} onChange={(e) => updateCredits(idx, 'Production', Number(e.target.value))} className="w-24 border border-slate-200 rounded px-1 py-1 text-xs text-right" /></td>
-                      <td className="px-2 py-1 text-right"><input type="number" value={it.credits.Sandbox} onChange={(e) => updateCredits(idx, 'Sandbox', Number(e.target.value))} className="w-24 border border-slate-200 rounded px-1 py-1 text-xs text-right" /></td>
+                      <td className="px-2 py-1"><input value={it.label} onChange={(e) => updateItem(idx, { label: e.target.value })} className="w-64 border border-slate-200 rounded px-1 py-1 text-xs" /></td>
+                      <td className="px-2 py-1 text-right"><input type="number" value={it.credits.Production} onChange={(e) => updateCredits(idx, 'Production', Number(e.target.value))} className="w-20 border border-slate-200 rounded px-1 py-1 text-xs text-right" /></td>
+                      <td className="px-2 py-1 text-right"><input type="number" value={it.credits.Sandbox} onChange={(e) => updateCredits(idx, 'Sandbox', Number(e.target.value))} className="w-20 border border-slate-200 rounded px-1 py-1 text-xs text-right" /></td>
                       <td className="px-2 py-1 text-right"><button onClick={() => removeItem(idx)} className="text-rose-500 hover:text-rose-700 text-xs">Remove</button></td>
                     </tr>
                   ))}
@@ -200,23 +175,7 @@ export default function RateSheetManager({ rates, onSave, onReset, onClose }: Pr
               </table>
             </div>
           </section>
-
-          <section className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <h3 className="text-sm font-semibold text-slate-900 mb-1">Import JSON</h3>
-              <textarea value={importText} onChange={(e) => setImportText(e.target.value)}
-                placeholder='{"meta": {...}, "items": [...] }'
-                className="w-full h-28 border border-slate-300 rounded-lg px-2 py-1.5 text-xs font-mono" />
-              {importError ? <p className="text-xs text-rose-600 mt-1">Error: {importError}</p> : null}
-              <button onClick={tryImportJSON} className="btn-ghost text-sm py-1 px-3 mt-2">Import</button>
-            </div>
-            <div>
-              <h3 className="text-sm font-semibold text-slate-900 mb-1">Export</h3>
-              <button onClick={exportJSON} className="btn-ghost text-sm py-1 px-3">Download JSON</button>
-            </div>
-          </section>
         </div>
-
         <div className="p-5 border-t border-slate-200 flex items-center justify-between">
           <button onClick={() => { onReset(); onClose(); }} className="text-sm text-rose-600 hover:underline">Reset to built-in defaults</button>
           <div className="flex items-center gap-2">

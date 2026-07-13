@@ -6,7 +6,7 @@ export default function Header() {
       <div className="max-w-[1600px] mx-auto px-4 sm:px-6 h-14 flex items-center justify-between">
         <Link href="/" className="flex items-center gap-2 font-semibold text-slate-900">
           <span className="w-6 h-6 rounded-md bg-gradient-to-br from-sky-500 to-indigo-500" />
-          Salesforce Data Cloud Suite
+          NeuraFlash Data Cloud Suite
         </Link>
         <nav className="flex items-center gap-4 text-sm">
           <Link href="/" className="text-slate-600 hover:text-slate-900">Home</Link>

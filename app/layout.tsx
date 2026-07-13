@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import './globals.css';
 
 export const metadata: Metadata = {
-  title: 'Salesforce Data Cloud Suite',
+  title: 'NeuraFlash Data Cloud Suite',
   description: 'Credit Consumption Calculator and Data Readiness Assessment for Salesforce Data Cloud.'
 };
 

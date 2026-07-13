@@ -26,6 +26,8 @@ export async function extractPdfText(source: File | ArrayBuffer): Promise<string
     const yKeys = Object.keys(lines).map(Number).sort((a, b) => b - a);
     const pageLines: string[] = [];
     for (const yy of yKeys) {
+      // IMPORTANT: don't strip leading whitespace before rejoining - the PDF has an intentional
+      // leading space on 'Intelligent Processing' that we want to preserve for the parser.
       const line = lines[yy.toString()].sort((a, b) => a.x - b.x).map((s) => s.str).join(' ').replace(/\s+/g, ' ').trim();
       if (line) pageLines.push(line);
     }
@@ -60,10 +62,10 @@ export function parseRateItems(text: string): ParsedItem[] {
     if (seen.has(key)) continue;
     seen.add(key);
     let unitHint: string | undefined;
-    if (/\(mb\)|megabyte/i.test(label)) unitHint = 'Per 1 megabyte processed';
-    else if (/\(gb\)|gigabyte/i.test(label)) unitHint = 'Per 1 gigabyte processed';
-    else if (/compute\s*unit|code\s*ext/i.test(label)) unitHint = 'Per 1 Compute Unit';
-    else if (/row|record|event|inference|action|profile/i.test(label)) unitHint = 'Per 1,000,000 rows processed';
+    if (/\(mb\)|megabyte/i.test(label)) unitHint = 'Per 1 MegaByte (MB) Processed';
+    else if (/\(gb\)|gigabyte/i.test(label)) unitHint = 'Per 1 GigaByte (GB) Processed';
+    else if (/compute\s*unit|code\s*ext/i.test(label)) unitHint = 'Per Compute Unit';
+    else if (/row|record|event|inference|action|profile/i.test(label)) unitHint = 'Per 1 Million Rows Processed';
     items.push({ label, production, sandbox, unitHint, raw: line });
   }
   return items;
@@ -71,15 +73,15 @@ export function parseRateItems(text: string): ParsedItem[] {
 
 export function parsedToRateItems(parsed: ParsedItem[]): RateItem[] {
   return parsed.map((p, i) => {
-    const unit = p.unitHint ?? 'Per 1,000,000 rows processed';
+    const unit = p.unitHint ?? 'Per 1 Million Rows Processed';
     const isCompute = /compute unit/i.test(unit);
-    const isMB = /megabyte/i.test(unit);
-    const isGB = /gigabyte/i.test(unit);
+    const isMB = /megabyte|MB/i.test(unit);
+    const isGB = /gigabyte|GB/i.test(unit);
     const unitDivisor = isMB || isGB || isCompute ? 1 : 1000000;
     const unitLabel = isMB ? 'megabytes' : isGB ? 'gigabytes' : isCompute ? 'compute units' : 'rows';
     return {
       key: (p.label.toLowerCase().replace(/[^a-z0-9]+/g, '_').slice(0, 40) || `item_${i}`) + '_' + i,
-      phase: /(code\s*ext|compute)/.test(p.label.toLowerCase()) ? 'compute' : 'ingestion',
+      phase: guessPhase(p.label),
       label: p.label, unit, unitDivisor, unitLabel, unitSingular: unitLabel.replace(/s$/, ''),
       initialLabel: `Initial Load ${unitLabel.charAt(0).toUpperCase() + unitLabel.slice(1)}`,
       supportsInitial: false,
@@ -88,4 +90,18 @@ export function parsedToRateItems(parsed: ParsedItem[]): RateItem[] {
       processingRateNote: unit, usageNote: 'Auto-extracted from uploaded PDF. Please verify.'
     };
   });
+}
+
+// 6 phases matching the Nov 2025 PDF.
+// Profile Unification and Intelligent Processing belong to 'ingestion' (Connect, Harmonize, and Unify).
+function guessPhase(label: string): string {
+  const s = label.toLowerCase();
+  if (/(code\s*ext|compute\s*unit|\bcompute\b)/.test(s)) return 'compute';
+  if (/(real.?time|sub.?second|\bevent\b|\bapi\b\s*&\s*action)/.test(s)) return 'realtime';
+  if (/(insight|inference|predict|generative|calculated)/.test(s)) return 'insights';
+  if (/(quer|action|lookup)/.test(s)) return 'act';
+  if (/(segment|activat|audience|activate\s*dmo)/.test(s)) return 'activation';
+  // Everything else - including Profile Unification, Intelligent Processing,
+  // Federation, Data Share, Private Connect, Transforms, etc. - is ingestion.
+  return 'ingestion';
 }

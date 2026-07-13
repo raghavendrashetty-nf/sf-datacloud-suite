@@ -39,7 +39,6 @@ export default function CalculatorSidebar({ environment, costPerCreditUSD, overh
           <NumberSpinner value={overheadPct} onChange={setOverhead} ariaLabel="Overhead percentage" suffix="%" />
         </div>
       </div>
-
       <div className="card p-3 space-y-2">
         <h2 className="text-[11px] font-bold text-slate-900 uppercase tracking-wider">Rate Sheet</h2>
         <a href={rateSheetUrl} target="_blank" rel="noreferrer"
@@ -51,11 +50,8 @@ export default function CalculatorSidebar({ environment, costPerCreditUSD, overh
           </svg>
           View Rate Sheet PDF
         </a>
-        <button type="button" onClick={onOpenRateManager} className="w-full btn-ghost text-xs py-1.5 px-2">
-          Manage Rate Sheet
-        </button>
+        <button type="button" onClick={onOpenRateManager} className="w-full btn-ghost text-xs py-1.5 px-2">Manage Rate Sheet</button>
       </div>
-
       <div className="card p-3 space-y-2">
         <h2 className="text-[11px] font-bold text-slate-900 uppercase tracking-wider">Export & Reset</h2>
         <ExportPDFButton rates={rates} inputs={inputs} result={result} chartsRef={chartsRef} />

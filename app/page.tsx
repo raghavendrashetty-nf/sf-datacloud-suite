@@ -9,15 +9,14 @@ export default function LandingPage() {
       <div className="flex-1 flex flex-col items-center px-6 py-16">
         <div className="max-w-4xl w-full text-center">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-sky-100 text-sky-700 text-xs font-semibold">
-            Salesforce Data Cloud Suite - v4.5
+            NeuraFlash Data Cloud Suite - v4.7
           </div>
           <h1 className="mt-6 text-4xl sm:text-5xl font-bold tracking-tight text-slate-900">
             Prepare your data for <span className="text-sky-600">Data Cloud</span>
           </h1>
           <p className="mt-5 text-lg text-slate-600 leading-relaxed max-w-2xl mx-auto">
             Two tools to accelerate your Salesforce Data Cloud (Data 360) discovery
-            and onboarding journey - credit consumption forecasting and source-system
-            data readiness assessment.
+            and onboarding journey.
           </p>
         </div>
 
@@ -36,12 +35,7 @@ export default function LandingPage() {
                 <line x1="8" y1="14" x2="12" y2="14" />
               </svg>
             </div>
-            <div className="inline-flex items-center gap-2 px-2 py-0.5 rounded-full bg-sky-50 text-sky-700 text-[10px] font-semibold uppercase tracking-wider">
-              Feature 1
-            </div>
-            <h2 className="mt-3 text-2xl font-bold text-slate-900">
-              Credit Consumption Calculator
-            </h2>
+            <h2 className="mt-3 text-2xl font-bold text-slate-900">Credit Consumption Calculator</h2>
             <p className="mt-3 text-sm text-slate-600 leading-relaxed">
               Estimate your Data Cloud credit consumption and USD cost based on
               the official Salesforce Platform Services rate sheet.
@@ -70,12 +64,7 @@ export default function LandingPage() {
                 <path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11" />
               </svg>
             </div>
-            <div className="inline-flex items-center gap-2 px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 text-[10px] font-semibold uppercase tracking-wider">
-              Feature 2
-            </div>
-            <h2 className="mt-3 text-2xl font-bold text-slate-900">
-              Data Readiness Assessment
-            </h2>
+            <h2 className="mt-3 text-2xl font-bold text-slate-900">Data Readiness Assessment</h2>
             <p className="mt-3 text-sm text-slate-600 leading-relaxed">
               Connect to a live Salesforce org and run real data quality checks:
               duplicates, NULL/empty analysis, completeness, distribution, and more.
