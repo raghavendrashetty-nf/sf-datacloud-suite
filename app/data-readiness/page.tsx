@@ -7,15 +7,19 @@ import StepIndicator from '@/components/data-readiness/StepIndicator';
 import SearchableSelect from '@/components/data-readiness/SearchableSelect';
 import CheckResults from '@/components/data-readiness/CheckResults';
 import ConnectionForm from '@/components/data-readiness/ConnectionForm';
+import ZendeskConnectionForm from '@/components/data-readiness/ZendeskConnectionForm';
 import CheckCard from '@/components/data-readiness/CheckCard';
 import catalog from '@/config/dataReadinessCatalog.json';
 import { CHECK_META } from '@/lib/dataReadiness';
 import type { Catalog, CheckKey, CheckResult, ConnectionInfo, FieldType, SystemKey } from '@/lib/dataReadiness';
+import type { ZendeskConnectionInfo } from '@/lib/zendeskClient';
 
 const CAT = catalog as unknown as Catalog;
 
 interface SObjectListItem { name: string; label: string; custom: boolean; queryable: boolean; }
 interface SFieldListItem { name: string; label: string; type: string; mappedType: FieldType; referenceTo?: string[]; custom: boolean; }
+interface ZObjectListItem { name: string; label: string; labelPlural?: string; description?: string; }
+interface ZFieldListItem { name: string; label: string; type: string; mappedType: FieldType; referenceTo?: string[]; custom: boolean; }
 
 function SystemCard({ systemKey, onClick }: { systemKey: SystemKey; onClick: () => void }) {
   const sys = CAT.systems[systemKey];
@@ -45,7 +49,6 @@ function rankMatch(query: string, item: { value: string; label: string; descript
   const label = item.label.toLowerCase();
   const value = item.value.toLowerCase();
   const desc = (item.description ?? '').toLowerCase();
-
   if (label === q || value === q) return 0;
   if (label.startsWith(q) || value.startsWith(q)) return 1;
   const wordRe = new RegExp('\\b' + q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i');
@@ -57,7 +60,8 @@ function rankMatch(query: string, item: { value: string; label: string; descript
 
 export default function DataReadinessPage() {
   const [system, setSystem] = useState<SystemKey | null>(null);
-  const [connection, setConnection] = useState<ConnectionInfo>({ connected: false });
+  const [sfConnection, setSfConnection] = useState<ConnectionInfo>({ connected: false });
+  const [zdConnection, setZdConnection] = useState<ZendeskConnectionInfo>({ connected: false });
   const [checkType, setCheckType] = useState<CheckKey | null>(null);
   const [objectName, setObjectName] = useState<string | null>(null);
   const [fieldName, setFieldName] = useState<string | null>(null);
@@ -65,97 +69,138 @@ export default function DataReadinessPage() {
   const [result, setResult] = useState<CheckResult | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
-  // Live backend log
   const [liveLog, setLiveLog] = useState<string[]>([]);
   const abortRef = useRef<AbortController | null>(null);
   const runStartRef = useRef<number>(0);
 
-  const [liveObjects, setLiveObjects] = useState<SObjectListItem[]>([]);
-  const [loadingObjects, setLoadingObjects] = useState(false);
-  const [objectsError, setObjectsError] = useState<string | null>(null);
-  const [liveFields, setLiveFields] = useState<SFieldListItem[]>([]);
-  const [loadingFields, setLoadingFields] = useState(false);
-  const [fieldsError, setFieldsError] = useState<string | null>(null);
+  // Salesforce live metadata
+  const [sfObjects, setSfObjects] = useState<SObjectListItem[]>([]);
+  const [loadingSfObjects, setLoadingSfObjects] = useState(false);
+  const [sfObjectsError, setSfObjectsError] = useState<string | null>(null);
+  const [sfFields, setSfFields] = useState<SFieldListItem[]>([]);
+  const [loadingSfFields, setLoadingSfFields] = useState(false);
+  const [sfFieldsError, setSfFieldsError] = useState<string | null>(null);
+
+  // Zendesk live metadata
+  const [zdObjects, setZdObjects] = useState<ZObjectListItem[]>([]);
+  const [loadingZdObjects, setLoadingZdObjects] = useState(false);
+  const [zdObjectsError, setZdObjectsError] = useState<string | null>(null);
+  const [zdFields, setZdFields] = useState<ZFieldListItem[]>([]);
+  const [loadingZdFields, setLoadingZdFields] = useState(false);
+  const [zdFieldsError, setZdFieldsError] = useState<string | null>(null);
 
   useEffect(() => {
-    fetch('/api/data-readiness/connection').then((r) => r.json()).then((j) => { if (j?.info?.connected) setConnection(j.info); }).catch(() => {});
+    fetch('/api/data-readiness/connection').then((r) => r.json()).then((j) => { if (j?.info?.connected) setSfConnection(j.info); }).catch(() => {});
+    fetch('/api/data-readiness/zendesk-connection').then((r) => r.json()).then((j) => { if (j?.info?.connected) setZdConnection(j.info); }).catch(() => {});
   }, []);
 
+  // Fetch Salesforce objects
   useEffect(() => {
-    if (system !== 'salesforce' || !connection.connected) { setLiveObjects([]); return; }
-    setLoadingObjects(true); setObjectsError(null);
+    if (system !== 'salesforce' || !sfConnection.connected) { setSfObjects([]); return; }
+    setLoadingSfObjects(true); setSfObjectsError(null);
     fetch('/api/data-readiness/objects')
       .then(async (r) => { const j = await r.json(); if (!r.ok) throw new Error(j.error || `HTTP ${r.status}`); return j; })
-      .then((j) => setLiveObjects(j.items ?? []))
-      .catch((e) => setObjectsError(e?.message ?? 'Failed to load objects'))
-      .finally(() => setLoadingObjects(false));
-  }, [system, connection.connected]);
+      .then((j) => setSfObjects(j.items ?? []))
+      .catch((e) => setSfObjectsError(e?.message ?? 'Failed to load objects'))
+      .finally(() => setLoadingSfObjects(false));
+  }, [system, sfConnection.connected]);
 
+  // Fetch Zendesk objects
   useEffect(() => {
-    if (system !== 'salesforce' || !connection.connected || !objectName) { setLiveFields([]); return; }
-    setLoadingFields(true); setFieldsError(null);
+    if (system !== 'zendesk' || !zdConnection.connected) { setZdObjects([]); return; }
+    setLoadingZdObjects(true); setZdObjectsError(null);
+    fetch('/api/data-readiness/zendesk-objects')
+      .then(async (r) => { const j = await r.json(); if (!r.ok) throw new Error(j.error || `HTTP ${r.status}`); return j; })
+      .then((j) => setZdObjects(j.items ?? []))
+      .catch((e) => setZdObjectsError(e?.message ?? 'Failed to load objects'))
+      .finally(() => setLoadingZdObjects(false));
+  }, [system, zdConnection.connected]);
+
+  // Fetch Salesforce fields
+  useEffect(() => {
+    if (system !== 'salesforce' || !sfConnection.connected || !objectName) { setSfFields([]); return; }
+    setLoadingSfFields(true); setSfFieldsError(null);
     fetch(`/api/data-readiness/objects/${encodeURIComponent(objectName)}/fields`)
       .then(async (r) => { const j = await r.json(); if (!r.ok) throw new Error(j.error || `HTTP ${r.status}`); return j; })
-      .then((j) => setLiveFields(j.fields ?? []))
-      .catch((e) => setFieldsError(e?.message ?? 'Failed to load fields'))
-      .finally(() => setLoadingFields(false));
-  }, [system, connection.connected, objectName]);
+      .then((j) => setSfFields(j.fields ?? []))
+      .catch((e) => setSfFieldsError(e?.message ?? 'Failed to load fields'))
+      .finally(() => setLoadingSfFields(false));
+  }, [system, sfConnection.connected, objectName]);
 
-  const STEPS = system === 'zendesk'
-    ? [{ key: 'system', label: 'System' }, { key: 'check', label: 'Check' }, { key: 'target', label: 'Object & Field' }, { key: 'result', label: 'Results' }]
-    : [{ key: 'system', label: 'System' }, { key: 'connect', label: 'Connect' }, { key: 'check', label: 'Check' }, { key: 'target', label: 'Object & Field' }, { key: 'result', label: 'Results' }];
+  // Fetch Zendesk fields
+  useEffect(() => {
+    if (system !== 'zendesk' || !zdConnection.connected || !objectName) { setZdFields([]); return; }
+    setLoadingZdFields(true); setZdFieldsError(null);
+    fetch(`/api/data-readiness/zendesk-objects/${encodeURIComponent(objectName)}/fields`)
+      .then(async (r) => { const j = await r.json(); if (!r.ok) throw new Error(j.error || `HTTP ${r.status}`); return j; })
+      .then((j) => setZdFields(j.fields ?? []))
+      .catch((e) => setZdFieldsError(e?.message ?? 'Failed to load fields'))
+      .finally(() => setLoadingZdFields(false));
+  }, [system, zdConnection.connected, objectName]);
+
+  const isConnected =
+    system === 'salesforce' ? sfConnection.connected :
+    system === 'zendesk'    ? zdConnection.connected : false;
+
+  const STEPS = [
+    { key: 'system', label: 'System' },
+    { key: 'connect', label: 'Connect' },
+    { key: 'check', label: 'Check' },
+    { key: 'target', label: 'Object & Field' },
+    { key: 'result', label: 'Results' }
+  ];
 
   const currentStep = useMemo(() => {
     if (result) return STEPS.length - 1;
-    if (system === 'salesforce') {
-      if (!connection.connected) return 1;
-      if (!checkType) return 2;
-      return 3;
-    }
-    if (system === 'zendesk') { if (!checkType) return 1; return 2; }
-    return 0;
-  }, [system, connection.connected, checkType, result, STEPS.length]);
+    if (!system) return 0;
+    if (!isConnected) return 1;
+    if (!checkType) return 2;
+    return 3;
+  }, [system, isConnected, checkType, result, STEPS.length]);
 
   const currentCheck = checkType ? CAT.checks[checkType] : null;
 
   const objectItems = useMemo(() => {
-    if (system === 'salesforce' && connection.connected) {
-      const raw = liveObjects.map((o) => ({
+    if (system === 'salesforce' && sfConnection.connected) {
+      const raw = sfObjects.map((o) => ({
         value: o.name, label: o.label, description: o.name, badge: o.custom ? 'Custom' : 'Standard'
       }));
       const q = objectSearchQuery.trim();
       if (!q) {
         return raw.sort((a, b) => {
-          const aBadge = a.badge === 'Standard' ? 0 : 1;
-          const bBadge = b.badge === 'Standard' ? 0 : 1;
-          if (aBadge !== bBadge) return aBadge - bBadge;
+          const aB = a.badge === 'Standard' ? 0 : 1;
+          const bB = b.badge === 'Standard' ? 0 : 1;
+          if (aB !== bB) return aB - bB;
           return a.label.localeCompare(b.label);
         });
       }
       const withRank = raw.map((item) => ({ item, rank: rankMatch(q, item) }));
       withRank.sort((a, b) => {
         if (a.rank !== b.rank) return a.rank - b.rank;
-        const aBadge = a.item.badge === 'Standard' ? 0 : 1;
-        const bBadge = b.item.badge === 'Standard' ? 0 : 1;
-        if (aBadge !== bBadge) return aBadge - bBadge;
+        const aB = a.item.badge === 'Standard' ? 0 : 1;
+        const bB = b.item.badge === 'Standard' ? 0 : 1;
+        if (aB !== bB) return aB - bB;
         return a.item.label.localeCompare(b.item.label);
       });
       return withRank.map(({ item }) => item);
     }
-    if (system && system !== 'salesforce') {
-      const sys = CAT.systems[system];
-      return Object.entries(sys.objects).map(([key, o]) => ({
-        value: key, label: o.label, description: o.description, badge: `${Object.keys(o.fields).length} fields`
+    if (system === 'zendesk' && zdConnection.connected) {
+      const raw = zdObjects.map((o) => ({
+        value: o.name, label: o.label, description: o.description ?? o.name, badge: 'Standard'
       }));
+      const q = objectSearchQuery.trim();
+      if (!q) return raw.sort((a, b) => a.label.localeCompare(b.label));
+      const withRank = raw.map((item) => ({ item, rank: rankMatch(q, item) }));
+      withRank.sort((a, b) => a.rank - b.rank || a.item.label.localeCompare(b.item.label));
+      return withRank.map(({ item }) => item);
     }
     return [];
-  }, [system, connection.connected, liveObjects, objectSearchQuery]);
+  }, [system, sfConnection.connected, zdConnection.connected, sfObjects, zdObjects, objectSearchQuery]);
 
   const fieldItems = useMemo(() => {
     if (!currentCheck || !objectName) return [];
-    if (system === 'salesforce' && connection.connected) {
-      return liveFields
+    if (system === 'salesforce' && sfConnection.connected) {
+      return sfFields
         .filter((f) => currentCheck.appliesToTypes.includes(f.mappedType))
         .map((f) => ({
           value: f.name, label: f.label,
@@ -163,30 +208,32 @@ export default function DataReadinessPage() {
           badge: f.mappedType
         }));
     }
-    if (system && system !== 'salesforce') {
-      const sys = CAT.systems[system];
-      const objectDef = sys.objects[objectName];
-      if (!objectDef) return [];
-      return Object.entries(objectDef.fields)
-        .filter(([, f]) => currentCheck.appliesToTypes.includes(f.type as any))
-        .map(([key, f]) => ({ value: key, label: f.label, description: `${key} \u00b7 ${f.description}`, badge: f.type }));
+    if (system === 'zendesk' && zdConnection.connected) {
+      return zdFields
+        .filter((f) => currentCheck.appliesToTypes.includes(f.mappedType))
+        .map((f) => ({
+          value: f.name, label: f.label,
+          description: `${f.name} \u00b7 ${f.type}${f.referenceTo?.length ? ' \u2192 ' + f.referenceTo.join(', ') : ''}`,
+          badge: f.mappedType
+        }));
     }
     return [];
-  }, [system, connection.connected, currentCheck, objectName, liveFields]);
+  }, [system, sfConnection.connected, zdConnection.connected, currentCheck, objectName, sfFields, zdFields]);
 
   const selectedFieldInfo = useMemo(() => {
     if (!fieldName || !objectName || !system) return null;
-    if (system === 'salesforce' && connection.connected) {
-      const f = liveFields.find((x) => x.name === fieldName);
+    if (system === 'salesforce' && sfConnection.connected) {
+      const f = sfFields.find((x) => x.name === fieldName);
       if (!f) return null;
       return { label: f.label, type: f.mappedType, rawType: f.type, description: `${f.name}${f.referenceTo?.length ? ' - references ' + f.referenceTo.join(', ') : ''}` };
     }
-    const sys = CAT.systems[system];
-    const objectDef = sys.objects[objectName];
-    const fld = objectDef?.fields[fieldName];
-    if (!fld) return null;
-    return { label: fld.label, type: fld.type, rawType: fld.type, description: fld.description };
-  }, [system, connection.connected, objectName, fieldName, liveFields]);
+    if (system === 'zendesk' && zdConnection.connected) {
+      const f = zdFields.find((x) => x.name === fieldName);
+      if (!f) return null;
+      return { label: f.label, type: f.mappedType, rawType: f.type, description: `${f.name}${f.referenceTo?.length ? ' - references ' + f.referenceTo.join(', ') : ''}` };
+    }
+    return null;
+  }, [system, sfConnection.connected, zdConnection.connected, objectName, fieldName, sfFields, zdFields]);
 
   function chooseSystem(s: SystemKey) {
     setSystem(s); setCheckType(null); setObjectName(null); setFieldName(null); setResult(null); setError(null);
@@ -206,26 +253,30 @@ export default function DataReadinessPage() {
     setLoading(true); setError(null); setResult(null); setLiveLog([]);
     runStartRef.current = Date.now();
 
-    // Animated stage log while the server runs
-    const stages = [
-      `Connecting to ${system} check runner...`,
-      `Counting rows in ${objectName}...`,
-      `Iterating ${fieldName} values via queryMore (no LIMIT)...`,
-      `Building in-memory frequency map...`,
-      `Computing severity, examples, and metrics...`
-    ];
+    const stages = system === 'zendesk'
+      ? [
+          `Connecting to Zendesk...`,
+          `Counting records in ${objectName}...`,
+          `Iterating records via cursor pagination (no LIMIT)...`,
+          `Building in-memory frequency map...`,
+          `Computing severity and metrics...`
+        ]
+      : [
+          `Connecting to Salesforce...`,
+          `Counting rows in ${objectName}...`,
+          `Iterating ${fieldName} via queryMore (no LIMIT)...`,
+          `Building in-memory frequency map...`,
+          `Computing severity and metrics...`
+        ];
     let stageIdx = 0;
-    const interval = setInterval(() => {
-      if (stageIdx < stages.length) appendLog(stages[stageIdx++]);
-    }, 900);
+    const interval = setInterval(() => { if (stageIdx < stages.length) appendLog(stages[stageIdx++]); }, 900);
 
     const controller = new AbortController();
     abortRef.current = controller;
 
     try {
       const resp = await fetch('/api/data-readiness/check', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ system, checkType, object: objectName, field: fieldName }),
         signal: controller.signal
       });
@@ -237,25 +288,26 @@ export default function DataReadinessPage() {
       setLiveLog([]);
     } catch (e: any) {
       clearInterval(interval);
-      if (e?.name === 'AbortError') {
-        setError('Check aborted by user.');
-        appendLog('*** ABORTED by user ***');
-      } else {
-        setError(e?.message ?? 'Check failed');
-        appendLog(`*** ERROR: ${e?.message ?? e} ***`);
-      }
+      if (e?.name === 'AbortError') { setError('Check aborted by user.'); appendLog('*** ABORTED by user ***'); }
+      else { setError(e?.message ?? 'Check failed'); appendLog(`*** ERROR: ${e?.message ?? e} ***`); }
     } finally {
       setLoading(false);
       abortRef.current = null;
     }
   }
 
-  function abortCheck() {
-    abortRef.current?.abort();
-  }
+  function abortCheck() { abortRef.current?.abort(); }
 
   const canRun = !!(system && checkType && objectName && fieldName) && !loading;
-  const needsConnection = system === 'salesforce' && !connection.connected;
+  const needsConnection = !!system && !isConnected;
+
+  // Loading / error indicators per system
+  const loadingObjects = system === 'salesforce' ? loadingSfObjects : loadingZdObjects;
+  const objectsError   = system === 'salesforce' ? sfObjectsError   : zdObjectsError;
+  const objectsCount   = system === 'salesforce' ? sfObjects.length : zdObjects.length;
+  const loadingFields  = system === 'salesforce' ? loadingSfFields  : loadingZdFields;
+  const fieldsError    = system === 'salesforce' ? sfFieldsError    : zdFieldsError;
+  const fieldsCount    = system === 'salesforce' ? sfFields.length  : zdFields.length;
 
   return (
     <main className="min-h-screen">
@@ -268,7 +320,7 @@ export default function DataReadinessPage() {
             <span className="text-slate-700 font-medium">Data Readiness</span>
           </div>
           <h1 className="mt-2 text-2xl font-bold text-slate-900">Data Readiness Assessment</h1>
-          <p className="text-sm text-slate-600 mt-1">Connect to a live Salesforce org and run real data quality checks.</p>
+          <p className="text-sm text-slate-600 mt-1">Connect to a live source system and run real data quality checks.</p>
         </div>
 
         <div className="mb-6"><StepIndicator steps={STEPS} currentIndex={currentStep} /></div>
@@ -297,9 +349,14 @@ export default function DataReadinessPage() {
                 <div className="text-[10px] font-semibold uppercase tracking-wide text-slate-500">System</div>
                 <div className="text-sm font-semibold text-slate-900">{CAT.systems[system].name}</div>
               </div>
-              {connection.connected && system === 'salesforce' ? (
-                <span className={`chip ${connection.isSandbox ? 'bg-amber-100 text-amber-800' : 'bg-emerald-100 text-emerald-800'} font-semibold`}>
-                  {connection.isSandbox ? 'SANDBOX' : 'PRODUCTION'} - {connection.organizationName || connection.username}
+              {isConnected && system === 'salesforce' ? (
+                <span className={`chip ${sfConnection.isSandbox ? 'bg-amber-100 text-amber-800' : 'bg-emerald-100 text-emerald-800'} font-semibold`}>
+                  {sfConnection.isSandbox ? 'SANDBOX' : 'PRODUCTION'} - {sfConnection.organizationName || sfConnection.username}
+                </span>
+              ) : null}
+              {isConnected && system === 'zendesk' ? (
+                <span className="chip bg-emerald-100 text-emerald-800 font-semibold">
+                  {zdConnection.subdomain}.zendesk.com
                 </span>
               ) : null}
             </div>
@@ -310,46 +367,61 @@ export default function DataReadinessPage() {
         {system === 'salesforce' && needsConnection ? (
           <section>
             <h2 className="text-lg font-semibold text-slate-900 mb-3">2. Connect to Salesforce</h2>
-            <ConnectionForm onConnected={(info) => setConnection(info)} />
+            <ConnectionForm onConnected={(info) => setSfConnection(info)} />
           </section>
         ) : null}
 
-        {system === 'salesforce' && connection.connected && !result ? (
+        {system === 'zendesk' && needsConnection ? (
+          <section>
+            <h2 className="text-lg font-semibold text-slate-900 mb-3">2. Connect to Zendesk</h2>
+            <ZendeskConnectionForm onConnected={(info) => setZdConnection(info)} />
+          </section>
+        ) : null}
+
+        {system && isConnected && !result ? (
           <div className="rounded-xl border border-emerald-200 bg-emerald-50/50 p-3 mb-4 flex items-center justify-between gap-3 flex-wrap">
             <div className="flex items-center gap-2 text-xs">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4 text-emerald-600">
                 <polyline points="20 6 9 17 4 12" />
               </svg>
-              <span className="font-semibold text-emerald-800">Connected as {connection.displayName || connection.username}</span>
-              <span className="text-emerald-600">- {connection.organizationName || 'Salesforce'}</span>
+              {system === 'salesforce' ? (
+                <>
+                  <span className="font-semibold text-emerald-800">Connected as {sfConnection.displayName || sfConnection.username}</span>
+                  <span className="text-emerald-600">- {sfConnection.organizationName || 'Salesforce'}</span>
+                </>
+              ) : (
+                <>
+                  <span className="font-semibold text-emerald-800">Connected as {zdConnection.email}</span>
+                  <span className="text-emerald-600">- {zdConnection.subdomain}.zendesk.com</span>
+                </>
+              )}
             </div>
-            <button type="button" onClick={async () => { await fetch('/api/data-readiness/connection', { method: 'DELETE' }); setConnection({ connected: false }); }}
-              className="text-xs text-rose-600 hover:underline">Disconnect</button>
+            <button type="button" onClick={async () => {
+              const url = system === 'salesforce' ? '/api/data-readiness/connection' : '/api/data-readiness/zendesk-connection';
+              await fetch(url, { method: 'DELETE' });
+              if (system === 'salesforce') setSfConnection({ connected: false });
+              else setZdConnection({ connected: false });
+            }} className="text-xs text-rose-600 hover:underline">Disconnect</button>
           </div>
         ) : null}
 
-        {system && (!needsConnection) && !checkType ? (
+        {system && isConnected && !checkType ? (
           <section>
             <div className="mb-3">
-              <h2 className="text-lg font-semibold text-slate-900">{system === 'salesforce' ? '3.' : '2.'} Select a data quality check</h2>
+              <h2 className="text-lg font-semibold text-slate-900">3. Select a data quality check</h2>
               <p className="text-xs text-slate-500 mt-1">
-                Six pre-built Data Cloud discovery checks. Click <em>How this check works</em> on any card to see the exact queries, calculations, outcomes, and use cases.
+                Click <em>How this check works</em> on any card to see the exact queries, calculations, and use cases.
               </p>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               {(Object.keys(CAT.checks) as CheckKey[]).map((c) => (
-                <CheckCard
-                  key={c}
-                  meta={CHECK_META[c]}
-                  shortName={CAT.checks[c].shortName}
-                  onClick={() => chooseCheck(c)}
-                />
+                <CheckCard key={c} meta={CHECK_META[c]} shortName={CAT.checks[c].shortName} onClick={() => chooseCheck(c)} />
               ))}
             </div>
           </section>
         ) : null}
 
-        {system && (!needsConnection) && checkType ? (
+        {system && isConnected && checkType ? (
           <div className="card p-4 mb-4 flex items-center justify-between flex-wrap gap-3">
             <div className="flex items-start gap-3 flex-1 min-w-0">
               <span className="chip bg-emerald-100 text-emerald-700 shrink-0">{CAT.checks[checkType].shortName}</span>
@@ -364,26 +436,24 @@ export default function DataReadinessPage() {
           </div>
         ) : null}
 
-        {system && (!needsConnection) && checkType ? (
+        {system && isConnected && checkType ? (
           <section className="card p-5 mb-4">
-            <h2 className="text-lg font-semibold text-slate-900 mb-3">{system === 'salesforce' ? '4.' : '3.'} Choose the object &amp; field to check</h2>
+            <h2 className="text-lg font-semibold text-slate-900 mb-3">4. Choose the object &amp; field to check</h2>
 
-            {system === 'salesforce' && connection.connected ? (
-              <div className="mb-3 text-[11px] text-slate-500 flex items-center gap-2">
-                {loadingObjects ? (
-                  <>
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-3 h-3 animate-spin">
-                      <path d="M21 12a9 9 0 11-6.219-8.56" strokeLinecap="round" />
-                    </svg>
-                    Loading objects from your org...
-                  </>
-                ) : objectsError ? (
-                  <span className="text-rose-600">Failed to load objects: {objectsError}</span>
-                ) : (
-                  <span>{liveObjects.length} objects available. Exact matches float to the top.</span>
-                )}
-              </div>
-            ) : null}
+            <div className="mb-3 text-[11px] text-slate-500 flex items-center gap-2">
+              {loadingObjects ? (
+                <>
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-3 h-3 animate-spin">
+                    <path d="M21 12a9 9 0 11-6.219-8.56" strokeLinecap="round" />
+                  </svg>
+                  Loading objects...
+                </>
+              ) : objectsError ? (
+                <span className="text-rose-600">Failed to load objects: {objectsError}</span>
+              ) : (
+                <span>{objectsCount} objects available. Exact matches float to the top.</span>
+              )}
+            </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <SearchableSelect label={`${CAT.systems[system].name} object`}
@@ -398,11 +468,11 @@ export default function DataReadinessPage() {
                 emptyMessage={!objectName ? 'Pick an object first' : loadingFields ? 'Loading...' : fieldsError ? `Error: ${fieldsError}` : `No fields match this check`} />
             </div>
 
-            {system === 'salesforce' && connection.connected && objectName ? (
+            {isConnected && objectName ? (
               <div className="mt-2 text-[11px] text-slate-500">
                 {loadingFields ? null :
                  fieldsError ? <span className="text-rose-600">Failed: {fieldsError}</span> :
-                 liveFields.length > 0 ? <span>{liveFields.length} total fields, {fieldItems.length} match this check</span> : null}
+                 fieldsCount > 0 ? <span>{fieldsCount} total fields, {fieldItems.length} match this check</span> : null}
               </div>
             ) : null}
 
@@ -449,7 +519,7 @@ export default function DataReadinessPage() {
                   <div className="flex-1">
                     <h4 className="text-sm font-semibold text-slate-900">Live backend log</h4>
                     <p className="text-[11px] text-slate-500">
-                      Running against every row in your table via queryMore pagination. Large tables (millions of rows) may take 30-60 seconds.
+                      Running against every record. Large datasets may take 30-60 seconds.
                     </p>
                   </div>
                 </div>
@@ -466,7 +536,7 @@ export default function DataReadinessPage() {
         {result ? (
           <section>
             <div className="flex items-center justify-between mb-3">
-              <h2 className="text-lg font-semibold text-slate-900">{system === 'salesforce' ? '5.' : '4.'} Results</h2>
+              <h2 className="text-lg font-semibold text-slate-900">5. Results</h2>
               <button type="button" onClick={() => { setResult(null); setFieldName(null); }}
                 className="text-xs text-emerald-600 hover:underline">Run another check</button>
             </div>
