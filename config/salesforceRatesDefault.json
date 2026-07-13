@@ -25,7 +25,7 @@
         "Production": 0,
         "Sandbox": 0
       },
-      "description": "Rows moved between Data Cloud objects internally. Included at no charge.",
+      "description": "Rows ingested from native Salesforce clouds (Sales, Service, Marketing, and Commerce) via internal connectors, which carries a zero-credit billing multiplier.",
       "processingRateNote": "Per 1 Million Rows Processed",
       "usageNote": "Free. Included (0 credits) for both Batch and Streaming per the rate sheet."
     },
