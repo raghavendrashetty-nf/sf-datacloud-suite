@@ -135,9 +135,9 @@ export default function CreditCalculatorPage() {
             })}
           </div>
 
-          <div className="lg:col-span-3 lg:sticky lg:top-20 lg:self-start" ref={chartsRef}>
-            <ResultsSummary result={result} />
-          </div>
+      <div className="lg:col-span-3 lg:sticky lg:top-20 lg:self-start lg:max-h-[calc(100vh-6rem)] lg:overflow-y-auto lg:pr-1 lg:z-30" ref={chartsRef}>
+        <ResultsSummary result={result} />
+      </div>
         </div>
       </div>
 
