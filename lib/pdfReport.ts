@@ -9,9 +9,12 @@ interface Options {
 }
 
 const PHASE_LABELS: Record<string, string> = {
-  ingestion: 'Connect, Harmonize & Unify', harmonization: 'Identity Resolution',
-  realtime: 'End-to-End Real-Time Processing', insights: 'Analyze & Predict',
-  act: 'Act', activation: 'Segmentation & Activation', compute: 'Compute'
+  ingestion: 'Connect, Harmonize, and Unify',
+  realtime: 'E2E Real-Time Processing',
+  insights: 'Analyze & Predict',
+  act: 'Act',
+  activation: 'Segmentation & Activation',
+  compute: 'Compute'
 };
 
 function phaseLabel(key: string): string { return PHASE_LABELS[key] ?? key; }
@@ -83,16 +86,15 @@ export async function generatePDFReport({ rates, inputs, result, chartsEl, filen
     } catch {}
   }
 
-  // Per-item table
   if (y + 40 > pageHeight - margin) { pdf.addPage(); y = margin; }
   pdf.setFont('helvetica', 'bold'); pdf.setFontSize(11);
   pdf.text('Per-Item Detail', margin, y);
   y += 6;
   const cols = [
-    { label: 'Phase', w: 34 }, { label: 'Item', w: 46 }, { label: 'Rate', w: 18 },
+    { label: 'Phase', w: 42 }, { label: 'Item', w: 58 }, { label: 'Rate', w: 16 },
     { label: 'Volume', w: 22 }, { label: 'Unit', w: 14 },
-    { label: 'Cr/Day', w: 22 }, { label: 'Cr/Month', w: 24 }, { label: 'Cr/Year', w: 24 },
-    { label: 'Total Cr', w: 24 }, { label: '$/Year', w: 20 }, { label: 'Total $', w: 22 }
+    { label: 'Cr/Day', w: 22 }, { label: 'Cr/Month', w: 22 }, { label: 'Cr/Year', w: 22 },
+    { label: 'Total Cr', w: 22 }, { label: '$/Year', w: 20 }, { label: 'Total $', w: 22 }
   ];
   pdf.setFillColor(30, 41, 59);
   pdf.setTextColor(255, 255, 255);
@@ -104,13 +106,13 @@ export async function generatePDFReport({ rates, inputs, result, chartsEl, filen
   y += 6;
   pdf.setTextColor(15, 23, 42); pdf.setFont('helvetica', 'normal');
   rates.items.forEach((item, idx) => {
-    if (y + 6 > pageHeight - margin - 5) { pdf.addPage(); y = margin; }
+    if (y + 6 > pageHeight - margin) { pdf.addPage(); y = margin; }
     if (idx % 2 === 1) { pdf.setFillColor(248, 250, 252); pdf.rect(margin, y, rowW, 5.5, 'F'); }
     const r = result.perItem[item.key];
     const rate = item.credits[inputs.environment] ?? 0;
     const row = [
-      phaseLabel(item.phase).slice(0, 18),
-      item.label.slice(0, 26),
+      phaseLabel(item.phase).slice(0, 22),
+      item.label.slice(0, 32),
       `${rate}`,
       fmtCredits(inputs.itemVolumes[item.key] ?? 0),
       periodLabel(r?.effectivePeriod ?? 'year'),

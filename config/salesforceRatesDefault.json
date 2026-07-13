@@ -1,6 +1,6 @@
 {
   "meta": {
-    "version": "4.5",
+    "version": "4.7",
     "source": "Salesforce Data Cloud Platform Services Rate Sheet (Nov 2025)",
     "url": "https://www.salesforce.com/en-us/wp-content/uploads/sites/4/documents/platform/New-Nov25-DataCloud-PlatformServices.pdf"
   },
@@ -15,7 +15,7 @@
       "key": "internalDataPipeline",
       "phase": "ingestion",
       "label": "Internal Data Pipeline",
-      "unit": "Per 1,000,000 rows processed",
+      "unit": "Per 1 Million Rows Processed",
       "unitDivisor": 1000000,
       "unitLabel": "rows",
       "unitSingular": "row",
@@ -25,15 +25,15 @@
         "Production": 0,
         "Sandbox": 0
       },
-      "description": "Rows moved between Data Cloud objects internally.",
-      "processingRateNote": "Per 1,000,000 rows processed",
-      "usageNote": "Free \u2014 no credits are charged."
+      "description": "Rows moved between Data Cloud objects internally. Included at no charge.",
+      "processingRateNote": "Per 1 Million Rows Processed",
+      "usageNote": "Free. Included (0 credits) for both Batch and Streaming per the rate sheet."
     },
     {
-      "key": "externalBatchIngestion",
+      "key": "externalDataPipelineBatch",
       "phase": "ingestion",
-      "label": "Batch Data Pipeline",
-      "unit": "Per 1,000,000 rows processed",
+      "label": "(External) Data Pipeline - Batch",
+      "unit": "Per 1 Million Rows Processed",
       "unitDivisor": 1000000,
       "unitLabel": "rows",
       "unitSingular": "row",
@@ -43,15 +43,15 @@
         "Production": 2000,
         "Sandbox": 1600
       },
-      "description": "Rows ingested via batch connectors.",
-      "processingRateNote": "Per 1,000,000 rows processed",
-      "usageNote": "Applies to batch connectors."
+      "description": "Rows ingested from external systems via batch connectors (SFTP, S3, Snowflake, etc.).",
+      "processingRateNote": "Per 1 Million Rows Processed",
+      "usageNote": "Batch column of the (External) Data Pipeline row."
     },
     {
-      "key": "externalStreamingIngestion",
+      "key": "externalDataPipelineStreaming",
       "phase": "ingestion",
-      "label": "Streaming Data Pipeline",
-      "unit": "Per 1,000,000 rows processed",
+      "label": "(External) Data Pipeline - Streaming",
+      "unit": "Per 1 Million Rows Processed",
       "unitDivisor": 1000000,
       "unitLabel": "rows",
       "unitSingular": "row",
@@ -61,15 +61,15 @@
         "Production": 5000,
         "Sandbox": 4000
       },
-      "description": "Rows ingested via real-time streaming connectors.",
-      "processingRateNote": "Per 1,000,000 rows processed",
-      "usageNote": "Higher rate than batch."
+      "description": "Rows ingested via real-time streaming connectors (Kafka, webhooks, event APIs).",
+      "processingRateNote": "Per 1 Million Rows Processed",
+      "usageNote": "Streaming column of the (External) Data Pipeline row."
     },
     {
-      "key": "batchDataTransforms",
+      "key": "dataTransformsBatch",
       "phase": "ingestion",
-      "label": "Batch Data Transforms",
-      "unit": "Per 1,000,000 rows processed",
+      "label": "Data Transforms - Batch",
+      "unit": "Per 1 Million Rows Processed",
       "unitDivisor": 1000000,
       "unitLabel": "rows",
       "unitSingular": "row",
@@ -79,15 +79,15 @@
         "Production": 400,
         "Sandbox": 320
       },
-      "description": "Rows transformed via batch data prep.",
-      "processingRateNote": "Per 1,000,000 rows processed",
-      "usageNote": "Applies to batch data prep."
+      "description": "Rows transformed via scheduled batch data prep and Data Transforms.",
+      "processingRateNote": "Per 1 Million Rows Processed",
+      "usageNote": "Batch column of the Data Transforms row."
     },
     {
-      "key": "streamingDataTransforms",
+      "key": "dataTransformsStreaming",
       "phase": "ingestion",
-      "label": "Streaming Data Transforms",
-      "unit": "Per 1,000,000 rows processed",
+      "label": "Data Transforms - Streaming",
+      "unit": "Per 1 Million Rows Processed",
       "unitDivisor": 1000000,
       "unitLabel": "rows",
       "unitSingular": "row",
@@ -97,15 +97,15 @@
         "Production": 5000,
         "Sandbox": 4000
       },
-      "description": "Rows transformed in real-time.",
-      "processingRateNote": "Per 1,000,000 rows processed",
-      "usageNote": "Higher rate for streaming."
+      "description": "Rows transformed in real-time via streaming Data Transforms.",
+      "processingRateNote": "Per 1 Million Rows Processed",
+      "usageNote": "Streaming column of the Data Transforms row."
     },
     {
       "key": "unstructuredDataProcessed",
       "phase": "ingestion",
       "label": "Unstructured Data Processed",
-      "unit": "Per 1 megabyte processed",
+      "unit": "Per 1 MegaByte (MB) Processed",
       "unitDivisor": 1,
       "unitLabel": "megabytes",
       "unitSingular": "megabyte",
@@ -115,15 +115,33 @@
         "Production": 60,
         "Sandbox": 48
       },
-      "description": "Unstructured content chunked and vectorized.",
-      "processingRateNote": "Per 1 megabyte processed",
-      "usageNote": "For AI use cases."
+      "description": "Unstructured content (PDFs, text, images) chunked and vectorized for AI use cases.",
+      "processingRateNote": "Per 1 MegaByte (MB) Processed",
+      "usageNote": "Applies to Search Index and unstructured data lakes for Einstein / Agentforce."
     },
     {
-      "key": "dataFederationRows",
+      "key": "intelligentProcessing",
       "phase": "ingestion",
-      "label": "Data Federation Rows",
-      "unit": "Per 1,000,000 rows processed",
+      "label": "Intelligent Processing",
+      "unit": "Per 1 MegaByte (MB) Processed",
+      "unitDivisor": 1,
+      "unitLabel": "megabytes",
+      "unitSingular": "megabyte",
+      "initialLabel": "Initial Load Megabytes",
+      "supportsInitial": true,
+      "credits": {
+        "Production": 750,
+        "Sandbox": 600
+      },
+      "description": "AI-driven intelligent processing of data (semantic enrichment, entity extraction, etc.).",
+      "processingRateNote": "Per 1 MegaByte (MB) Processed",
+      "usageNote": "Was missing from earlier UI versions due to a leading space in the PDF source."
+    },
+    {
+      "key": "dataFederationRowsAccessed",
+      "phase": "ingestion",
+      "label": "Data Federation or Sharing Rows Accessed",
+      "unit": "Per 1 Million Rows Accessed",
       "unitDivisor": 1000000,
       "unitLabel": "rows",
       "unitSingular": "row",
@@ -133,15 +151,15 @@
         "Production": 70,
         "Sandbox": 56
       },
-      "description": "Zero-copy rows federated.",
-      "processingRateNote": "Per 1,000,000 rows processed",
-      "usageNote": "No storage cost."
+      "description": "Zero-copy rows federated / shared from Snowflake, BigQuery, Databricks, Redshift, etc.",
+      "processingRateNote": "Per 1 Million Rows Accessed",
+      "usageNote": "No storage cost - data stays in source warehouse; charged per row accessed."
     },
     {
-      "key": "dataShareRowsOut",
+      "key": "dataShareRowsShared",
       "phase": "ingestion",
-      "label": "Data Share Rows Out",
-      "unit": "Per 1,000,000 rows processed",
+      "label": "Data Share Rows Shared (Data Out)",
+      "unit": "Per 1 Million Rows Shared",
       "unitDivisor": 1000000,
       "unitLabel": "rows",
       "unitSingular": "row",
@@ -151,15 +169,15 @@
         "Production": 800,
         "Sandbox": 640
       },
-      "description": "Rows shared out via Data Share.",
-      "processingRateNote": "Per 1,000,000 rows processed",
-      "usageNote": "Zero-copy sharing."
+      "description": "Rows shared out of Data Cloud to external consumers via Data Share.",
+      "processingRateNote": "Per 1 Million Rows Shared",
+      "usageNote": "Applies to zero-copy sharing to Snowflake / BigQuery / Databricks recipients."
     },
     {
-      "key": "privateConnectGB",
+      "key": "privateConnectDataProcessed",
       "phase": "ingestion",
-      "label": "Private Connect Data",
-      "unit": "Per 1 gigabyte processed",
+      "label": "Private Connect Data Processed",
+      "unit": "Per 1 GigaByte (GB) Processed",
       "unitDivisor": 1,
       "unitLabel": "gigabytes",
       "unitSingular": "gigabyte",
@@ -169,15 +187,15 @@
         "Production": 500,
         "Sandbox": 400
       },
-      "description": "Data moved via Private Connect.",
-      "processingRateNote": "Per 1 gigabyte processed",
-      "usageNote": "Private network egress/ingress."
+      "description": "Data moved over Private Connect (AWS PrivateLink) instead of the public internet.",
+      "processingRateNote": "Per 1 GigaByte (GB) Processed",
+      "usageNote": "Applies to secure private network egress/ingress via Private Connect."
     },
     {
       "key": "profileUnification",
-      "phase": "harmonization",
+      "phase": "ingestion",
       "label": "Profile Unification",
-      "unit": "Per 1,000,000 rows processed",
+      "unit": "Per 1 Million Rows Processed",
       "unitDivisor": 1000000,
       "unitLabel": "rows",
       "unitSingular": "row",
@@ -187,33 +205,15 @@
         "Production": 100000,
         "Sandbox": 80000
       },
-      "description": "Identity resolution runs.",
-      "processingRateNote": "Per 1,000,000 rows processed",
-      "usageNote": "Charged per identity resolution."
+      "description": "Identity resolution runs that unify individual profiles across sources.",
+      "processingRateNote": "Per 1 Million Rows Processed",
+      "usageNote": "Charged each time the identity resolution ruleset is executed."
     },
     {
-      "key": "matchReconRules",
-      "phase": "harmonization",
-      "label": "Match & Reconciliation Rules",
-      "unit": "Per 1,000,000 rows processed",
-      "unitDivisor": 1000000,
-      "unitLabel": "rows",
-      "unitSingular": "row",
-      "initialLabel": "Initial Load Rows",
-      "supportsInitial": true,
-      "credits": {
-        "Production": 5000,
-        "Sandbox": 4000
-      },
-      "description": "Match / reconciliation rules.",
-      "processingRateNote": "Per 1,000,000 rows processed",
-      "usageNote": "Complementary to Profile Unification."
-    },
-    {
-      "key": "realtimeEvents",
+      "key": "subSecondRealTime",
       "phase": "realtime",
-      "label": "Real-Time Events Processed",
-      "unit": "Per 1,000,000 rows processed",
+      "label": "Sub-second Real-Time Events",
+      "unit": "Per 1 Million combined Events, API & Actions",
       "unitDivisor": 1000000,
       "unitLabel": "events",
       "unitSingular": "event",
@@ -223,15 +223,15 @@
         "Production": 70000,
         "Sandbox": 56000
       },
-      "description": "End-to-end real-time events.",
-      "processingRateNote": "Per 1,000,000 events processed",
-      "usageNote": "E2E real-time SLA."
+      "description": "End-to-end sub-second events, API calls, and actions flowing through Data Cloud.",
+      "processingRateNote": "Per 1 Million combined Events, API & Actions",
+      "usageNote": "Combined meter across Events, API, and Actions - highest-value real-time use case."
     },
     {
       "key": "calculatedInsightsBatch",
       "phase": "insights",
-      "label": "Calculated Insights (Batch)",
-      "unit": "Per 1,000,000 rows processed",
+      "label": "Calculated Insights - Batch",
+      "unit": "Per 1 Million Rows Processed",
       "unitDivisor": 1000000,
       "unitLabel": "rows",
       "unitSingular": "row",
@@ -241,15 +241,15 @@
         "Production": 15,
         "Sandbox": 12
       },
-      "description": "Scheduled Calculated Insights.",
-      "processingRateNote": "Per 1,000,000 rows processed",
-      "usageNote": "Batch aggregations."
+      "description": "Rows processed by scheduled Calculated Insights (batch metric aggregations).",
+      "processingRateNote": "Per 1 Million Rows Processed",
+      "usageNote": "Batch column of the Calculated Insights row."
     },
     {
       "key": "calculatedInsightsStreaming",
       "phase": "insights",
-      "label": "Calculated Insights (Streaming)",
-      "unit": "Per 1,000,000 rows processed",
+      "label": "Calculated Insights - Streaming",
+      "unit": "Per 1 Million Rows Processed",
       "unitDivisor": 1000000,
       "unitLabel": "rows",
       "unitSingular": "row",
@@ -259,15 +259,15 @@
         "Production": 800,
         "Sandbox": 640
       },
-      "description": "Streaming Calculated Insights.",
-      "processingRateNote": "Per 1,000,000 rows processed",
-      "usageNote": "Real-time metric compute."
+      "description": "Rows processed by real-time streaming Calculated Insights.",
+      "processingRateNote": "Per 1 Million Rows Processed",
+      "usageNote": "Streaming column of the Calculated Insights row."
     },
     {
       "key": "inferences",
       "phase": "insights",
-      "label": "Predictive & Generative Inferences",
-      "unit": "Per 1,000,000 rows processed",
+      "label": "Inferences",
+      "unit": "Per 1 Million Inferences",
       "unitDivisor": 1000000,
       "unitLabel": "inferences",
       "unitSingular": "inference",
@@ -277,15 +277,15 @@
         "Production": 3500,
         "Sandbox": 2800
       },
-      "description": "Predictions / generative AI inferences.",
-      "processingRateNote": "Per 1,000,000 inferences",
-      "usageNote": "ML predictions or LLM calls."
+      "description": "Predictive or generative AI inferences executed on Data Cloud data.",
+      "processingRateNote": "Per 1 Million Inferences",
+      "usageNote": "Applies to classical ML predictions and generative model calls scored on DMOs."
     },
     {
       "key": "dataQueries",
       "phase": "act",
       "label": "Data Queries",
-      "unit": "Per 1,000,000 rows processed",
+      "unit": "Per 1 Million Rows Processed",
       "unitDivisor": 1000000,
       "unitLabel": "rows",
       "unitSingular": "row",
@@ -295,15 +295,15 @@
         "Production": 2,
         "Sandbox": 1.6
       },
-      "description": "Query API rows returned.",
-      "processingRateNote": "Per 1,000,000 rows processed",
-      "usageNote": "Charged per row returned."
+      "description": "Ad-hoc query API rows returned to Marketing Cloud, MC Personalization, Sales/Service, etc.",
+      "processingRateNote": "Per 1 Million Rows Processed",
+      "usageNote": "Charged per row returned across Query API, SQL, and Personalization retrievals."
     },
     {
-      "key": "streamingActions",
+      "key": "streamingActionsLookups",
       "phase": "act",
-      "label": "Streaming Actions",
-      "unit": "Per 1,000,000 rows processed",
+      "label": "Streaming Actions (including Lookups)",
+      "unit": "Per 1 Million Actions",
       "unitDivisor": 1000000,
       "unitLabel": "actions",
       "unitSingular": "action",
@@ -313,15 +313,15 @@
         "Production": 800,
         "Sandbox": 640
       },
-      "description": "Real-time Data Actions.",
-      "processingRateNote": "Per 1,000,000 actions",
-      "usageNote": "Data Action Targets."
+      "description": "Real-time Data Actions (including Lookups) triggered from Data Cloud.",
+      "processingRateNote": "Per 1 Million Actions",
+      "usageNote": "Data Action Targets and Lookup actions - one credit event per action."
     },
     {
       "key": "segmentRowsProcessed",
       "phase": "activation",
       "label": "Segment Rows Processed",
-      "unit": "Per 1,000,000 rows processed",
+      "unit": "Per 1 Million Rows Processed",
       "unitDivisor": 1000000,
       "unitLabel": "rows",
       "unitSingular": "row",
@@ -331,15 +331,15 @@
         "Production": 20,
         "Sandbox": 16
       },
-      "description": "Segment / filter rows.",
-      "processingRateNote": "Per 1,000,000 rows processed",
-      "usageNote": "Per segment publish job."
+      "description": "Rows evaluated when a segment or attribute filter is published.",
+      "processingRateNote": "Per 1 Million Rows Processed",
+      "usageNote": "Charged per segment publish job over the underlying population."
     },
     {
-      "key": "batchActivation",
+      "key": "batchActivationRows",
       "phase": "activation",
-      "label": "Batch Activation Rows",
-      "unit": "Per 1,000,000 rows processed",
+      "label": "Batch Activation (with or without related attributes)",
+      "unit": "Per 1 Million Rows Processed",
       "unitDivisor": 1000000,
       "unitLabel": "rows",
       "unitSingular": "row",
@@ -349,15 +349,15 @@
         "Production": 10,
         "Sandbox": 8
       },
-      "description": "Batch destination activation.",
-      "processingRateNote": "Per 1,000,000 rows processed",
-      "usageNote": "Batch audience delivery."
+      "description": "Rows activated to batch destinations (Marketing Cloud lists, Ads audiences, SFTP files).",
+      "processingRateNote": "Per 1 Million Rows Processed",
+      "usageNote": "Very low rate - designed for high-volume batch audience delivery."
     },
     {
-      "key": "streamingActivation",
+      "key": "activateDmoStreaming",
       "phase": "activation",
-      "label": "Streaming Activation Rows",
-      "unit": "Per 1,000,000 rows processed",
+      "label": "Activate DMO - Streaming",
+      "unit": "Per 1 Million Rows Processed",
       "unitDivisor": 1000000,
       "unitLabel": "rows",
       "unitSingular": "row",
@@ -367,15 +367,15 @@
         "Production": 1600,
         "Sandbox": 1280
       },
-      "description": "Real-time activation.",
-      "processingRateNote": "Per 1,000,000 rows processed",
-      "usageNote": "Real-time destinations."
+      "description": "Rows activated to real-time destinations via DMO streaming activation.",
+      "processingRateNote": "Per 1 Million Rows Processed",
+      "usageNote": "Higher rate reflects real-time activation infrastructure."
     },
     {
       "key": "codeExtension",
       "phase": "compute",
       "label": "Code Extension",
-      "unit": "Per 1 Compute Unit",
+      "unit": "Per Compute Unit",
       "unitDivisor": 1,
       "unitLabel": "compute units",
       "unitSingular": "compute unit",
@@ -385,9 +385,9 @@
         "Production": 40,
         "Sandbox": 32
       },
-      "description": "Custom code / compute unit.",
-      "processingRateNote": "Per 1 Compute Unit",
-      "usageNote": "DMO extensions or scheduled functions."
+      "description": "Custom code extensions running on Data Cloud infrastructure.",
+      "processingRateNote": "Per Compute Unit",
+      "usageNote": "Charged per compute unit consumed by custom code."
     }
   ]
 }

@@ -1,12 +1,7 @@
 'use client';
 
 interface Step { key: string; label: string; }
-
-interface Props {
-  steps: Step[];
-  currentIndex: number;
-  onStepClick?: (index: number) => void;
-}
+interface Props { steps: Step[]; currentIndex: number; onStepClick?: (index: number) => void; }
 
 export default function StepIndicator({ steps, currentIndex, onStepClick }: Props) {
   return (
@@ -36,9 +31,7 @@ export default function StepIndicator({ steps, currentIndex, onStepClick }: Prop
               </span>
               {step.label}
             </button>
-            {i < steps.length - 1 ? (
-              <span className={`w-6 h-0.5 ${isDone ? 'bg-emerald-300' : 'bg-slate-200'}`} />
-            ) : null}
+            {i < steps.length - 1 ? <span className={`w-6 h-0.5 ${isDone ? 'bg-emerald-300' : 'bg-slate-200'}`} /> : null}
           </li>
         );
       })}

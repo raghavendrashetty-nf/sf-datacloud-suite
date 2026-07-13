@@ -17,7 +17,7 @@ const PERIOD_LABEL_PER: Record<Period, string> = { day: '/ day', week: '/ week',
 const PERIOD_WORD: Record<Period, string> = { day: 'day', week: 'week', month: 'month', year: 'year' };
 const MULTIPLIER: Record<Period, number> = { day: 365, week: 52, month: 12, year: 1 };
 const MULTIPLIER_NOTE: Record<Period, string> = {
-  day: '365 days per year', week: '52 weeks per year', month: '12 months per year', year: 'input is already annual, so multiplier is 1'
+  day: '365 days per year', week: '52 weeks per year', month: '12 months per year', year: 'input is already annual'
 };
 
 function capitalize(s: string) { return s.charAt(0).toUpperCase() + s.slice(1); }
@@ -37,17 +37,19 @@ export default function ItemCard({ item, environment, itemPeriod, volume, initia
     effectivePeriod === 'week' ? result.weeklyCredits :
     effectivePeriod === 'month' ? result.monthlyCredits : result.annualCredits;
   const perPeriodCost = perPeriodCredits * costPerCreditUSD;
-  const formulaParts = [`(volume ÷ ${item.unitDivisor})`, `× ${rate}`, `× ${multiplier}`];
-  if (showOverhead) formulaParts.push(`× ${overheadFactor.toFixed(2)}`);
+  const formulaParts = [`(volume \u00f7 ${item.unitDivisor})`, `\u00d7 ${rate}`, `\u00d7 ${multiplier}`];
+  if (showOverhead) formulaParts.push(`\u00d7 ${overheadFactor.toFixed(2)}`);
   const formula = formulaParts.join(' ');
 
   return (
     <div className={`card p-3 relative border-t-4 border-t-${theme.color}-500 ${isFree ? 'bg-emerald-50/30' : ''}`}>
-      <div className="absolute top-2 right-2 flex items-center gap-1.5">
-        {isFree ? <span className="chip bg-emerald-500 text-white font-bold" title="This item is free">FREE</span> : null}
-        <span className={`chip bg-${theme.color}-100 text-${theme.color}-700`}>{theme.label}</span>
+      {/* Header row: title + FREE badge only. Phase chip removed to avoid overlap - phase context is already shown in the parent section header. */}
+      <div className="flex items-start justify-between gap-2">
+        <h3 className="text-sm font-semibold text-slate-900 flex-1 min-w-0 leading-snug">{item.label}</h3>
+        {isFree ? (
+          <span className="chip bg-emerald-500 text-white font-bold shrink-0" title="This item is free">FREE</span>
+        ) : null}
       </div>
-      <h3 className={`text-sm font-semibold text-slate-900 ${isFree ? 'pr-32' : 'pr-24'}`}>{item.label}</h3>
       <p className="text-[11px] text-slate-500 mt-1 leading-snug">{item.description}</p>
 
       {isFree ? (
@@ -77,7 +79,7 @@ export default function ItemCard({ item, environment, itemPeriod, volume, initia
         <label className="block text-[11px] font-medium text-slate-700 mb-1">{primaryLabel}</label>
         <div className="flex items-center gap-2">
           <div className="flex-1 min-w-0">
-            <NumberSpinner value={volume} onChange={onVolumeChange} ariaLabel={`${item.label} — ${primaryLabel}`} suffix={suffix} />
+            <NumberSpinner value={volume} onChange={onVolumeChange} ariaLabel={`${item.label} \u2014 ${primaryLabel}`} suffix={suffix} />
           </div>
           <div className="text-right min-w-[90px] shrink-0">
             <div className="text-[9px] uppercase tracking-wide text-slate-500">Credits / {PERIOD_WORD[effectivePeriod]}</div>
@@ -94,7 +96,7 @@ export default function ItemCard({ item, environment, itemPeriod, volume, initia
           <label className="block text-[11px] font-semibold text-slate-800 mb-1">{item.initialLabel} (Day 0, one-time)</label>
           <div className="flex items-center gap-2">
             <div className="flex-1 min-w-0">
-              <NumberSpinner value={initial} onChange={onInitialChange} ariaLabel={`${item.label} — ${item.initialLabel}`} suffix={item.unitLabel} />
+              <NumberSpinner value={initial} onChange={onInitialChange} ariaLabel={`${item.label} \u2014 ${item.initialLabel}`} suffix={item.unitLabel} />
             </div>
             <div className="text-right min-w-[90px] shrink-0">
               <div className="text-[9px] uppercase tracking-wide text-slate-500">Credits</div>
@@ -113,7 +115,7 @@ export default function ItemCard({ item, environment, itemPeriod, volume, initia
       <CollapsibleSection title="Example Breakdown">
         <div className="space-y-1">
           <div>Rate ({environment}): <strong>{rate}</strong> credits per <em>{item.unit.toLowerCase()}</em>
-            {isFree ? <span className="ml-1 text-emerald-700 font-semibold">(this item is free)</span> : null}
+            {isFree ? <span className="ml-1 text-emerald-700 font-semibold">(free)</span> : null}
           </div>
           <div>Annualizer: <strong>{multiplier}</strong>
             <span className="text-slate-400"> ({MULTIPLIER_NOTE[effectivePeriod]})</span>
@@ -121,11 +123,11 @@ export default function ItemCard({ item, environment, itemPeriod, volume, initia
           {showOverhead ? <div>Overhead multiplier: <strong>{overheadFactor.toFixed(2)}</strong> (from {overheadPct}% overhead)</div> : null}
           <div>Formula: <code className="text-[11px]">{formula}</code></div>
           <div>Per-period credits ({PERIOD_WORD[effectivePeriod]}): <strong>{fmtCredits(perPeriodCredits)}</strong>
-            <span className="text-slate-400"> · {fmtUSD(perPeriodCost)}</span></div>
+            <span className="text-slate-400"> \u00b7 {fmtUSD(perPeriodCost)}</span></div>
           <div>Monthly credits: <strong>{fmtCredits(result.monthlyCredits)}</strong>
-            <span className="text-slate-400"> · {fmtUSD(result.monthlyCostUSD)}</span></div>
+            <span className="text-slate-400"> \u00b7 {fmtUSD(result.monthlyCostUSD)}</span></div>
           <div>Annual credits: <strong>{fmtCredits(result.annualCredits)}</strong>
-            <span className="text-slate-400"> · {fmtUSD(result.annualCostUSD)}</span></div>
+            <span className="text-slate-400"> \u00b7 {fmtUSD(result.annualCostUSD)}</span></div>
         </div>
       </CollapsibleSection>
 

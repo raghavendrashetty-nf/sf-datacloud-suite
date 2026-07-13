@@ -14,7 +14,6 @@ export function calculate(inputs: CalculatorInputs, rates: RatesConfig): Calcula
   const daysPerYear = rates.settings.daysPerYear;
   const weeksPerYear = rates.settings.weeksPerYear;
   const monthsPerYear = rates.settings.monthsPerYear;
-
   const perItem: Record<string, ItemResult> = {};
   const phaseAccumulator: Record<string, PhaseTotal> = {};
   let totDailyCredits = 0, totWeeklyCredits = 0, totMonthlyCredits = 0, totAnnualCredits = 0, totInitialCredits = 0;

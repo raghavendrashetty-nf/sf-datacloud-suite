@@ -16,12 +16,10 @@ function stepFor(v: number): number {
 
 export default function NumberSpinner({ value, onChange, ariaLabel, suffix, min = 0 }: Props) {
   const [display, setDisplay] = useState<string>(value === 0 ? '' : String(value));
-
   useEffect(() => {
     if (value === 0) setDisplay((prev) => (prev === '' || Number(prev) === 0 ? prev : ''));
     else setDisplay(String(value));
   }, [value]);
-
   function handleChange(e: ChangeEvent<HTMLInputElement>) {
     const raw = e.target.value.replace(/[^0-9.]/g, '');
     setDisplay(raw);
@@ -44,7 +42,6 @@ export default function NumberSpinner({ value, onChange, ariaLabel, suffix, min 
     setDisplay(String(next));
     onChange(next);
   }
-
   return (
     <div className="flex items-stretch rounded-lg border border-slate-300 bg-white overflow-hidden focus-within:ring-2 focus-within:ring-sky-400">
       <button type="button" onClick={dec} aria-label={`Decrease ${ariaLabel}`}
@@ -53,9 +50,7 @@ export default function NumberSpinner({ value, onChange, ariaLabel, suffix, min 
         onChange={handleChange} onFocus={handleFocus} onBlur={handleBlur}
         placeholder="0" aria-label={ariaLabel}
         className="flex-1 min-w-0 w-full text-right px-2 py-1.5 text-sm outline-none tabular-nums placeholder:text-slate-300" />
-      {suffix ? (
-        <span className="px-2 flex items-center text-xs text-slate-500 border-l border-slate-200 bg-slate-50 shrink-0">{suffix}</span>
-      ) : null}
+      {suffix ? <span className="px-2 flex items-center text-xs text-slate-500 border-l border-slate-200 bg-slate-50 shrink-0">{suffix}</span> : null}
       <button type="button" onClick={inc} aria-label={`Increase ${ariaLabel}`}
         className="px-2 text-slate-500 hover:bg-slate-100 border-l border-slate-200 shrink-0">+</button>
     </div>
