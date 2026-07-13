@@ -97,12 +97,16 @@ function BarChart({ result }: { result: CalculationResult }) {
   );
 }
 
+
 export default function ResultsSummary({ result }: { result: CalculationResult }) {
   const t = result.totals;
   const [showBar, setShowBar] = useState(true);
   return (
     <div className="space-y-3">
-      <FirstYearHero credits={t.firstYearGrandTotalCredits} cost={t.firstYearGrandTotalUSD} />
+      {/* Always-visible headline card - pinned at the top of the results column */}
+      <div className="sticky top-0 z-20 pb-3 bg-[#f7f8fb]">
+        <FirstYearHero credits={t.firstYearGrandTotalCredits} cost={t.firstYearGrandTotalUSD}/>
+      </div>
       <div className="grid grid-cols-2 gap-2">
         <StatCard label="Daily" credits={t.dailyCredits} cost={t.dailyCostUSD} />
         <StatCard label="Monthly" credits={t.monthlyCredits} cost={t.monthlyCostUSD} />
