@@ -24,16 +24,10 @@ interface Props {
 const BATCH_RUN_MODES = getPhaseRefreshConfig('ingestion').modes.filter((m) => m !== 'streaming');
 const BATCH_FREQUENCIES = getPhaseRefreshConfig('ingestion').frequenciesByMode;
 
-export default function PipelineBuilder({ pipelines, rates, environment, overheadPct, onAdd, onUpdate, onRemove }: Props) {
-  return (
-    <div id="pipeline-builder" className="mt-3 space-y-3">
-      <PipelineSection type="batch" title="Batch Pipelines" pipelines={pipelines} rates={rates} environment={environment} overheadPct={overheadPct} onAdd={onAdd} onUpdate={onUpdate} onRemove={onRemove} />
-      <PipelineSection type="streaming" title="Streaming Pipelines" pipelines={pipelines} rates={rates} environment={environment} overheadPct={overheadPct} onAdd={onAdd} onUpdate={onUpdate} onRemove={onRemove} />
-    </div>
-  );
-}
-
-function PipelineSection({ type, title, pipelines, rates, environment, overheadPct, onAdd, onUpdate, onRemove }: Props & { type: PipelineType; title: string }) {
+// Embedded directly inside the (External) Data Pipeline - Batch/Streaming item cards
+// (see ItemCardAdvanced.tsx) rather than in a separate section - keeps pipeline
+// configuration next to the credit line it actually feeds, no page-jump required.
+export default function PipelineSection({ type, title, pipelines, rates, environment, overheadPct, onAdd, onUpdate, onRemove }: Props & { type: PipelineType; title: string }) {
   const connections = connectionsFor(type);
   const [pendingConnection, setPendingConnection] = useState(connections[0].key);
   const sectionPipelines = pipelines.filter((p) => (p.runMode === 'streaming') === (type === 'streaming'));

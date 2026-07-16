@@ -6,13 +6,17 @@ import Header from '@/components/Header';
 import CalculatorSidebar from '@/components/CalculatorSidebar';
 import ResultsSummary from '@/components/ResultsSummary';
 import ItemCardAdvanced from '@/components/advanced/ItemCardAdvanced';
-import PipelineBuilder from '@/components/advanced/PipelineBuilder';
 import BackToTopButton from '@/components/BackToTopButton';
 import RateSheetManager from '@/components/RateSheetManager';
 import { useRates } from '@/hooks/useRates';
 import { useCalculatorAdvanced } from '@/hooks/useCalculatorAdvanced';
 import { PHASES } from '@/components/PhaseTheme';
+import { PIPELINE_DRIVEN_ITEM_KEYS } from '@/lib/pipeline';
 import type { RateItem } from '@/lib/types';
+
+function isPipelineDrivenItem(item: RateItem): boolean {
+  return item.key === PIPELINE_DRIVEN_ITEM_KEYS.batch || item.key === PIPELINE_DRIVEN_ITEM_KEYS.streaming;
+}
 
 function ChevronDown({ className = 'w-4 h-4' }: { className?: string }) {
   return (
@@ -123,20 +127,28 @@ export default function CreditCalculatorAdvancedPage() {
                     <h2 className="text-lg font-semibold text-slate-900 flex-1">{label}</h2>
                     <span className="text-xs text-slate-400">{items.length} item{items.length === 1 ? '' : 's'}</span>
                   </button>
-                  {isOpen ? (
-                    <div className="px-3 pb-3 pt-1 border-t border-slate-100">
-                      <div className="grid grid-cols-1 xl:grid-cols-2 gap-3 mt-3">
-                        {items.map((item) => (
-                          <ItemCardAdvanced key={item.key} item={item} environment={state.environment}
-                            costPerCreditUSD={state.costPerCreditUSD} result={result.perItem[item.key]} adv={adv} />
-                        ))}
+                  {isOpen ? (() => {
+                    const pipelineItems = items.filter(isPipelineDrivenItem);
+                    const regularItems = items.filter((item) => !isPipelineDrivenItem(item));
+                    return (
+                      <div className="px-3 pb-3 pt-1 border-t border-slate-100">
+                        {pipelineItems.length > 0 ? (
+                          <div className="space-y-3 mt-3">
+                            {pipelineItems.map((item) => (
+                              <ItemCardAdvanced key={item.key} item={item} environment={state.environment}
+                                costPerCreditUSD={state.costPerCreditUSD} result={result.perItem[item.key]} adv={adv} rates={rates} />
+                            ))}
+                          </div>
+                        ) : null}
+                        <div className="grid grid-cols-1 xl:grid-cols-2 gap-3 mt-3">
+                          {regularItems.map((item) => (
+                            <ItemCardAdvanced key={item.key} item={item} environment={state.environment}
+                              costPerCreditUSD={state.costPerCreditUSD} result={result.perItem[item.key]} adv={adv} rates={rates} />
+                          ))}
+                        </div>
                       </div>
-                      {phaseKey === 'ingestion' ? (
-                        <PipelineBuilder pipelines={state.pipelines} rates={rates} environment={state.environment} overheadPct={state.overheadPct}
-                          onAdd={adv.addPipeline} onUpdate={adv.updatePipeline} onRemove={adv.removePipeline} />
-                      ) : null}
-                    </div>
-                  ) : null}
+                    );
+                  })() : null}
                 </section>
               );
             })}
