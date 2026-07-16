@@ -122,8 +122,8 @@ function PipelineCard({ pipeline, type, rates, environment, overheadPct, onUpdat
           <input value={pipeline.object} onChange={(e) => onUpdate(pipeline.id, { object: e.target.value })}
             onFocus={selectAllObject.onFocus} onMouseUp={selectAllObject.onMouseUp}
             aria-label="Object" placeholder="Object (e.g. Contact)"
-            className="w-28 border border-slate-200 rounded px-1.5 py-1 text-xs shrink-0 focus:outline-none focus:ring-2 focus:ring-sky-400" />
-          <div className="w-36 shrink-0">
+            className="w-24 border border-slate-200 rounded px-1.5 py-1 text-xs shrink-0 focus:outline-none focus:ring-2 focus:ring-sky-400" />
+          <div className="w-56 shrink-0">
             <NumberSpinner value={pipeline.volumePerRun} onChange={(v) => onUpdate(pipeline.id, { volumePerRun: v })}
               ariaLabel={`${connLabel} ${type === 'streaming' ? 'rows per day' : 'volume per run'}`}
               suffix={type === 'streaming' ? 'rows/day' : 'rows/run'} />
