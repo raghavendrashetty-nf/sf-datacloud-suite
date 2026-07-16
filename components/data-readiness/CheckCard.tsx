@@ -36,7 +36,7 @@ export default function CheckCard({ meta, shortName, onClick }: Props) {
           className="w-full flex items-center justify-between text-left px-4 py-2 text-[11px] font-semibold text-slate-600 hover:text-slate-900 uppercase tracking-wide"
         >
           <span>{open ? 'Hide details' : 'How this check works'}</span>
-          <span className="text-slate-400 text-sm">{open ? '\u2212' : '+'}</span>
+          <span className="text-slate-500 text-sm">{open ? '\u2212' : '+'}</span>
         </button>
         {open ? (
           <div className="px-4 pb-4 space-y-3 text-[11px] text-slate-700 border-t border-slate-100">

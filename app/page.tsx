@@ -23,7 +23,7 @@ function StageHeader({ number, name, status }: { number: number; name: string; s
     <div className="flex items-center gap-3">
       <span className={`w-9 h-9 rounded-full ${s.dot} text-white font-bold flex items-center justify-center text-sm shrink-0`}>{number}</span>
       <div>
-        <div className="text-[11px] font-bold uppercase tracking-widest text-slate-400">Stage {number}</div>
+        <div className="text-[11px] font-bold uppercase tracking-widest text-slate-500">Stage {number}</div>
         <div className="flex items-center gap-2 flex-wrap">
           <h2 className="text-lg font-bold text-slate-900">{name}</h2>
           <span className={`chip font-semibold ${s.chip}`}>{s.label}</span>
@@ -195,7 +195,7 @@ export default function LandingPage() {
         </div>
       </div>
 
-      <footer className="py-6 text-center text-xs text-slate-400">
+      <footer className="py-6 text-center text-xs text-slate-500">
         Not affiliated with Salesforce.
       </footer>
     </main>

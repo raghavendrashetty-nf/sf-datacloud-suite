@@ -83,7 +83,7 @@ export default function CreditCalculatorAdvancedPage() {
           <p className="text-sm text-slate-600 mt-1">
             Discovery/documentation-grade estimate: model Refresh Mode &amp; Run Frequency per phase and build out real Data Ingestion pipelines.
           </p>
-          <p className="text-xs text-slate-400 mt-1">
+          <p className="text-xs text-slate-500 mt-1">
             Rate source: <a href={rates.meta.url} target="_blank" rel="noreferrer" className="underline">{rates.meta.source}</a>
             {' · '}<Link href="/credit-calculator" className="underline">Switch to Basic Calculator</Link>
           </p>
@@ -107,7 +107,7 @@ export default function CreditCalculatorAdvancedPage() {
               <button type="button" onClick={() => setAllPhases(true)} className="text-xs text-sky-600 hover:text-sky-800 hover:underline">Expand all</button>
               <span className="text-slate-300">|</span>
               <button type="button" onClick={() => setAllPhases(false)} className="text-xs text-slate-500 hover:text-slate-900 hover:underline">Collapse all</button>
-              <span className="ml-auto text-[11px] text-slate-400 italic">All phases collapsed by default</span>
+              <span className="ml-auto text-[11px] text-slate-500 italic">All phases collapsed by default</span>
             </div>
 
             {orderedPhaseKeys.map((phaseKey) => {
@@ -125,7 +125,7 @@ export default function CreditCalculatorAdvancedPage() {
                     <ChevronDown className={`w-4 h-4 text-slate-500 transition-transform ${isOpen ? '' : '-rotate-90'}`} />
                     <span className={`chip bg-${color}-100 text-${color}-700`}>{order ? `Phase ${order}` : 'Custom Phase'}</span>
                     <h2 className="text-lg font-semibold text-slate-900 flex-1">{label}</h2>
-                    <span className="text-xs text-slate-400">{items.length} item{items.length === 1 ? '' : 's'}</span>
+                    <span className="text-xs text-slate-500">{items.length} item{items.length === 1 ? '' : 's'}</span>
                   </button>
                   {isOpen ? (() => {
                     const pipelineItems = items.filter(isPipelineDrivenItem);

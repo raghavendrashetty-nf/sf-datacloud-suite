@@ -11,3 +11,9 @@ export function fmtNumber(n: number): string {
   if (!isFinite(n)) return '0';
   return new Intl.NumberFormat('en-US').format(Math.round(n));
 }
+// A bare number reads ambiguously (rows? dollars? credits?) - spell out the unit so it
+// stands on its own without relying on a separate caption/label elsewhere on the page.
+export function fmtCreditsLabel(n: number): string {
+  const formatted = fmtCredits(n);
+  return `${formatted} ${formatted === '1' ? 'Credit' : 'Credits'}`;
+}

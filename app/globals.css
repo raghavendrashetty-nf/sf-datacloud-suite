@@ -23,6 +23,7 @@ html, body {
 .btn { @apply inline-flex items-center justify-center gap-2 px-4 py-2 rounded-xl font-medium transition-colors; }
 .btn-primary { @apply btn bg-slate-900 text-white hover:bg-slate-800; }
 .btn-ghost { @apply btn bg-white border border-slate-200 text-slate-700 hover:bg-slate-50; }
+.btn-danger { @apply btn bg-rose-600 text-white hover:bg-rose-700; }
 
 .fade-in { animation: fadein 200ms ease-out; }
 @keyframes fadein {

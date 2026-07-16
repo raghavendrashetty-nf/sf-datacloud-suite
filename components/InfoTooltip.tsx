@@ -18,9 +18,9 @@ export default function InfoTooltip({ description, docs = [], label = 'More info
         onClick={() => setOpen((o) => !o)}
         onBlur={() => setOpen(false)}
         aria-label={label}
-        className="w-4 h-4 rounded-full bg-slate-200 text-slate-600 hover:bg-sky-200 hover:text-sky-800 text-[10px] font-bold flex items-center justify-center leading-none shrink-0"
+        className="w-4 h-4 rounded-full bg-slate-200 text-slate-600 hover:bg-sky-200 hover:text-sky-800 text-[10px] font-bold flex items-center justify-center leading-none shrink-0 focus:outline-none focus:ring-2 focus:ring-sky-400"
       >
-        i
+        <span aria-hidden="true">i</span>
       </button>
       {open ? (
         <div className="absolute z-30 top-5 left-0 w-64 rounded-lg border border-slate-200 bg-white shadow-lg p-2.5 text-left">

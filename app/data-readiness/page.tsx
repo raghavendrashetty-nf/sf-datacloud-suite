@@ -481,7 +481,7 @@ export default function DataReadinessPage() {
                 <strong>{selectedFieldInfo.label}</strong>
                 <span className="ml-1 chip bg-white text-slate-600 border border-slate-200">{selectedFieldInfo.type}</span>
                 {selectedFieldInfo.rawType && selectedFieldInfo.rawType !== selectedFieldInfo.type ? (
-                  <span className="ml-1 text-slate-400 text-[10px]">({selectedFieldInfo.rawType})</span>
+                  <span className="ml-1 text-slate-500 text-[10px]">({selectedFieldInfo.rawType})</span>
                 ) : null}
                 <p className="mt-1 text-slate-600">{selectedFieldInfo.description}</p>
               </div>
@@ -500,7 +500,7 @@ export default function DataReadinessPage() {
               ) : (
                 <button type="button" onClick={runCheck} disabled={!canRun}
                   className={`inline-flex items-center gap-2 px-5 py-2.5 rounded-xl font-semibold text-sm transition-colors ${
-                    canRun ? 'bg-gradient-to-br from-emerald-500 to-teal-500 text-white shadow hover:shadow-md' : 'bg-slate-100 text-slate-400 cursor-not-allowed'
+                    canRun ? 'bg-gradient-to-br from-emerald-500 to-teal-500 text-white shadow hover:shadow-md' : 'bg-slate-100 text-slate-500 cursor-not-allowed'
                   }`}>
                   Run check
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4">

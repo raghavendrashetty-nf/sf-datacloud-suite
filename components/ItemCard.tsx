@@ -1,7 +1,7 @@
 'use client';
 
 import type { Environment, ItemResult, Period, RateItem } from '@/lib/types';
-import { fmtCredits, fmtUSD } from '@/lib/formatters';
+import { fmtCredits, fmtCreditsLabel, fmtUSD } from '@/lib/formatters';
 import { getPhaseTheme } from './PhaseTheme';
 import NumberSpinner from './NumberSpinner';
 import CollapsibleSection from './CollapsibleSection';
@@ -63,11 +63,11 @@ export default function ItemCard({ item, environment, itemPeriod, volume, initia
         </div>
       ) : null}
 
-      <div className="mt-2 rounded-lg border border-sky-200 bg-sky-50 p-2 flex items-center gap-2 flex-wrap">
-        <label htmlFor={`period-${item.key}`} className="text-[10px] uppercase font-bold tracking-wide text-sky-700">Input Unit</label>
+      <div className={`mt-2 rounded-lg border border-${theme.color}-200 bg-${theme.color}-50 p-2 flex items-center gap-2 flex-wrap`}>
+        <label htmlFor={`period-${item.key}`} className={`text-[10px] uppercase font-bold tracking-wide text-${theme.color}-700`}>Input Unit</label>
         <select id={`period-${item.key}`} value={effectivePeriod}
           onChange={(e) => onPeriodChange(e.target.value as Period)}
-          className="border border-sky-300 bg-white rounded-md px-1.5 py-0.5 text-xs font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-sky-400">
+          className={`border border-${theme.color}-300 bg-white rounded-md px-1.5 py-0.5 text-xs font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-${theme.color}-400`}>
           <option value="day">Per Day</option>
           <option value="week">Per Week</option>
           <option value="month">Per Month</option>
@@ -75,35 +75,33 @@ export default function ItemCard({ item, environment, itemPeriod, volume, initia
         </select>
       </div>
 
-      <div className="mt-2">
-        <label className="block text-[11px] font-medium text-slate-700 mb-1">{primaryLabel}</label>
-        <div className="flex items-center gap-2">
-          <div className="flex-1 min-w-0">
+      <div className="mt-2 rounded-lg border border-slate-200 p-2">
+        <div className="flex items-center gap-2 flex-wrap">
+          <label className="text-[11px] font-medium text-slate-700 shrink-0">{primaryLabel}</label>
+          <div className="w-60 shrink-0">
             <NumberSpinner value={volume} onChange={onVolumeChange} ariaLabel={`${item.label} \u2014 ${primaryLabel}`} suffix={suffix} />
           </div>
-          <div className="text-right min-w-[90px] shrink-0">
-            <div className="text-[9px] uppercase tracking-wide text-slate-500">Credits / {PERIOD_WORD[effectivePeriod]}</div>
-            <div className={`text-sm font-semibold tabular-nums ${isFree ? 'text-emerald-700' : 'text-slate-900'}`}>
-              {isFree ? 'FREE' : fmtCredits(perPeriodCredits)}
-            </div>
-            <div className="text-[10px] text-slate-500 tabular-nums">{fmtUSD(perPeriodCost)}</div>
+          <div className="ml-auto text-right shrink-0">
+            <span className={`text-sm font-semibold tabular-nums ${isFree ? 'text-emerald-700' : 'text-slate-900'}`}>
+              {isFree ? 'FREE' : fmtCreditsLabel(perPeriodCredits)}
+            </span>
+            <span className="text-[10px] text-slate-500 tabular-nums ml-1.5">{fmtUSD(perPeriodCost)} &middot; Cr/{PERIOD_WORD[effectivePeriod]}</span>
           </div>
         </div>
       </div>
 
       {item.supportsInitial ? (
         <div className={`mt-2 rounded-lg bg-${theme.color}-50 border border-${theme.color}-100 p-2`}>
-          <label className="block text-[11px] font-semibold text-slate-800 mb-1">{item.initialLabel} (Day 0, one-time)</label>
-          <div className="flex items-center gap-2">
-            <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2 flex-wrap">
+            <label className="text-[11px] font-semibold text-slate-800 shrink-0">{item.initialLabel} (Day 0, one-time)</label>
+            <div className="w-60 shrink-0">
               <NumberSpinner value={initial} onChange={onInitialChange} ariaLabel={`${item.label} \u2014 ${item.initialLabel}`} suffix={item.unitLabel} />
             </div>
-            <div className="text-right min-w-[90px] shrink-0">
-              <div className="text-[9px] uppercase tracking-wide text-slate-500">Credits</div>
-              <div className={`text-sm font-semibold tabular-nums ${isFree ? 'text-emerald-700' : 'text-slate-900'}`}>
-                {isFree ? 'FREE' : fmtCredits(result.initialCredits)}
-              </div>
-              <div className="text-[10px] text-slate-500 tabular-nums">{fmtUSD(result.initialCostUSD)}</div>
+            <div className="ml-auto text-right shrink-0">
+              <span className={`text-sm font-semibold tabular-nums ${isFree ? 'text-emerald-700' : 'text-slate-900'}`}>
+                {isFree ? 'FREE' : fmtCreditsLabel(result.initialCredits)}
+              </span>
+              <span className="text-[10px] text-slate-500 tabular-nums ml-1.5">{fmtUSD(result.initialCostUSD)}</span>
             </div>
           </div>
           <p className="mt-1 text-[10px] italic text-slate-500 leading-snug">
@@ -118,16 +116,16 @@ export default function ItemCard({ item, environment, itemPeriod, volume, initia
             {isFree ? <span className="ml-1 text-emerald-700 font-semibold">(free)</span> : null}
           </div>
           <div>Annualizer: <strong>{multiplier}</strong>
-            <span className="text-slate-400"> ({MULTIPLIER_NOTE[effectivePeriod]})</span>
+            <span className="text-slate-500"> ({MULTIPLIER_NOTE[effectivePeriod]})</span>
           </div>
           {showOverhead ? <div>Overhead multiplier: <strong>{overheadFactor.toFixed(2)}</strong> (from {overheadPct}% overhead)</div> : null}
           <div>Formula: <code className="text-[11px]">{formula}</code></div>
           <div>Per-period credits ({PERIOD_WORD[effectivePeriod]}): <strong>{fmtCredits(perPeriodCredits)}</strong>
-            <span className="text-slate-400"> \u00b7 {fmtUSD(perPeriodCost)}</span></div>
+            <span className="text-slate-500"> &middot; {fmtUSD(perPeriodCost)}</span></div>
           <div>Monthly credits: <strong>{fmtCredits(result.monthlyCredits)}</strong>
-            <span className="text-slate-400"> \u00b7 {fmtUSD(result.monthlyCostUSD)}</span></div>
+            <span className="text-slate-500"> &middot; {fmtUSD(result.monthlyCostUSD)}</span></div>
           <div>Annual credits: <strong>{fmtCredits(result.annualCredits)}</strong>
-            <span className="text-slate-400"> \u00b7 {fmtUSD(result.annualCostUSD)}</span></div>
+            <span className="text-slate-500"> &middot; {fmtUSD(result.annualCostUSD)}</span></div>
         </div>
       </CollapsibleSection>
 

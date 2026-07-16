@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import type { Environment, ItemResult, Period, RateItem, RatesConfig } from '@/lib/types';
-import { fmtCredits, fmtUSD } from '@/lib/formatters';
+import { fmtCredits, fmtCreditsLabel, fmtUSD } from '@/lib/formatters';
 import { getPhaseTheme } from '../PhaseTheme';
 import NumberSpinner from '../NumberSpinner';
 import CollapsibleSection from '../CollapsibleSection';
@@ -39,16 +39,17 @@ export default function ItemCardAdvanced({ item, environment, costPerCreditUSD, 
   return (
     <div className={`card p-3 relative border-t-4 border-t-${theme.color}-500 ${isFree ? 'bg-emerald-50/30' : ''}`}>
       <button type="button" onClick={() => setExpanded((e) => !e)} aria-expanded={expanded}
-        className="w-full flex items-center gap-2 text-left -m-1 p-1 rounded-lg hover:bg-slate-50 transition-colors">
+        aria-label={`${expanded ? 'Collapse' : 'Expand'} ${item.label}`}
+        className="w-full flex items-center gap-2 text-left -m-1 p-1 rounded-lg hover:bg-slate-50 transition-colors focus:outline-none focus:ring-2 focus:ring-sky-400">
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
-          className={`w-4 h-4 text-slate-400 shrink-0 transition-transform ${expanded ? '' : '-rotate-90'}`}>
+          aria-hidden="true" className={`w-4 h-4 text-slate-500 shrink-0 transition-transform ${expanded ? '' : '-rotate-90'}`}>
           <polyline points="6 9 12 15 18 9" />
         </svg>
         <h3 className="text-sm font-semibold text-slate-900 flex-1 min-w-0 leading-snug truncate">{item.label}</h3>
         {isFree ? <span className="chip bg-emerald-500 text-white font-bold shrink-0" title="This item is free">FREE</span> : null}
-        {!expanded ? (
+        {!expanded && !isFree ? (
           <span className="text-xs text-slate-500 tabular-nums shrink-0">
-            {isFree ? 'free' : `${fmtCredits(result.annualCredits)} cr/yr`}
+            {fmtCreditsLabel(result.annualCredits)}/yr
           </span>
         ) : null}
       </button>
@@ -67,15 +68,14 @@ export default function ItemCardAdvanced({ item, environment, costPerCreditUSD, 
 
           {item.supportsInitial ? (
             <div className={`mt-2 rounded-lg bg-${theme.color}-50 border border-${theme.color}-100 p-2`}>
-              <label className="block text-[11px] font-semibold text-slate-800 mb-1">{item.initialLabel} (Day 0, one-time)</label>
-              <div className="flex items-center gap-2">
-                <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2 flex-wrap">
+                <label className="text-[11px] font-semibold text-slate-800 shrink-0">{item.initialLabel} (Day 0, one-time)</label>
+                <div className="w-60 shrink-0">
                   <NumberSpinner value={adv.state.itemInitials[item.key] ?? 0} onChange={(v) => adv.setItemInitial(item.key, v)} ariaLabel={`${item.label} — ${item.initialLabel}`} suffix={item.unitLabel} />
                 </div>
-                <div className="text-right min-w-[90px] shrink-0">
-                  <div className="text-[9px] uppercase tracking-wide text-slate-500">Credits</div>
-                  <div className={`text-sm font-semibold tabular-nums ${isFree ? 'text-emerald-700' : 'text-slate-900'}`}>{isFree ? 'FREE' : fmtCredits(result.initialCredits)}</div>
-                  <div className="text-[10px] text-slate-500 tabular-nums">{fmtUSD(result.initialCostUSD)}</div>
+                <div className="ml-auto text-right shrink-0">
+                  <span className={`text-sm font-semibold tabular-nums ${isFree ? 'text-emerald-700' : 'text-slate-900'}`}>{isFree ? 'FREE' : fmtCreditsLabel(result.initialCredits)}</span>
+                  <span className="text-[10px] text-slate-500 tabular-nums ml-1.5">{fmtUSD(result.initialCostUSD)}</span>
                 </div>
               </div>
             </div>
@@ -100,13 +100,14 @@ export default function ItemCardAdvanced({ item, environment, costPerCreditUSD, 
 function PipelineDrivenBlock({ item, adv, rates, result, isFree }: {
   item: RateItem; adv: ReturnType<typeof useCalculatorAdvanced>; rates: RatesConfig; result: ItemResult; isFree: boolean;
 }) {
+  const theme = getPhaseTheme(item.phase);
   const kind: PipelineType = item.key === PIPELINE_DRIVEN_ITEM_KEYS.streaming ? 'streaming' : 'batch';
   return (
     <div className="mt-2 space-y-2">
-      <div className="rounded-lg border border-indigo-200 bg-indigo-50 p-2 flex items-center justify-between">
-        <span className="text-[10px] uppercase tracking-wide text-indigo-700 font-bold">Annual Credits (from Pipelines below)</span>
+      <div className={`rounded-lg border border-${theme.color}-200 bg-${theme.color}-50 p-2 flex items-center justify-between`}>
+        <span className={`text-[10px] uppercase tracking-wide text-${theme.color}-700 font-bold`}>Annual Credits (from Pipelines below)</span>
         <div className="text-right">
-          <div className={`text-sm font-semibold tabular-nums ${isFree ? 'text-emerald-700' : 'text-slate-900'}`}>{isFree ? 'FREE' : fmtCredits(result.annualCredits)}</div>
+          <div className={`text-sm font-semibold tabular-nums ${isFree ? 'text-emerald-700' : 'text-slate-900'}`}>{isFree ? 'FREE' : fmtCreditsLabel(result.annualCredits)}</div>
           <div className="text-[10px] text-slate-500 tabular-nums">{fmtUSD(result.annualCostUSD)}</div>
         </div>
       </div>
@@ -123,6 +124,7 @@ function RefreshControlledInputs({ item, adv, cfg, result, isFree }: {
   item: RateItem; adv: ReturnType<typeof useCalculatorAdvanced>; cfg: ReturnType<typeof getPhaseRefreshConfig>;
   result: ItemResult; isFree: boolean;
 }) {
+  const theme = getPhaseTheme(item.phase);
   const mode = adv.state.itemRefreshModes[item.key];
   const frequency = adv.state.itemFrequencies[item.key];
   const manualRuns = adv.state.itemManualRuns[item.key] ?? 12;
@@ -133,34 +135,36 @@ function RefreshControlledInputs({ item, adv, cfg, result, isFree }: {
 
   return (
     <>
-      <div className="mt-2 rounded-lg border border-sky-200 bg-sky-50 p-2 space-y-2">
+      <div className={`mt-2 rounded-lg border border-${theme.color}-200 bg-${theme.color}-50 p-2 space-y-2`}>
         <div className="flex items-center gap-1.5">
-          <label className="text-[10px] uppercase font-bold tracking-wide text-sky-700">Refresh Mode</label>
+          <label className={`text-[10px] uppercase font-bold tracking-wide text-${theme.color}-700`}>Refresh Mode</label>
           <InfoTooltip description={REFRESH_MODE_META[mode].description} docs={cfg.docs} />
         </div>
         <select
           value={mode}
           onChange={(e) => adv.setItemRefreshMode(item.key, item.phase, e.target.value as RefreshMode)}
-          className="w-full border border-sky-300 bg-white rounded-md px-1.5 py-1 text-xs font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-sky-400"
+          aria-label={`${item.label} — Refresh Mode`}
+          className={`min-w-[9rem] border border-${theme.color}-300 bg-white rounded-md px-1.5 py-1 text-xs font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-${theme.color}-400`}
         >
           {cfg.modes.map((m) => <option key={m} value={m}>{REFRESH_MODE_META[m].label}</option>)}
         </select>
 
         {isStreamingMode ? (
-          <p className="text-[10px] text-sky-700 italic">Streaming runs continuously — frequency is not applicable.</p>
+          <p className={`text-[10px] text-${theme.color}-700 italic`}>Streaming runs continuously — frequency is not applicable.</p>
         ) : (
           <>
-            <label className="block text-[10px] uppercase font-bold tracking-wide text-sky-700">Run Frequency</label>
+            <label className={`block text-[10px] uppercase font-bold tracking-wide text-${theme.color}-700`}>Run Frequency</label>
             <select
               value={frequency}
               onChange={(e) => adv.setItemFrequency(item.key, e.target.value as RunFrequency)}
-              className="w-full border border-sky-300 bg-white rounded-md px-1.5 py-1 text-xs font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-sky-400"
+              aria-label={`${item.label} — Run Frequency`}
+              className={`min-w-[9rem] border border-${theme.color}-300 bg-white rounded-md px-1.5 py-1 text-xs font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-${theme.color}-400`}
             >
               {availableFrequencies.map((f) => <option key={f} value={f}>{RUN_FREQUENCY_META[f].label}</option>)}
             </select>
             {frequency === 'manual' ? (
               <div>
-                <label className="block text-[10px] uppercase font-bold tracking-wide text-sky-700 mb-1">Estimated Runs / Year</label>
+                <label className={`block text-[10px] uppercase font-bold tracking-wide text-${theme.color}-700 mb-1`}>Estimated Runs / Year</label>
                 <NumberSpinner value={manualRuns} onChange={(v) => adv.setItemManualRuns(item.key, v)} ariaLabel={`${item.label} — runs per year`} min={1} />
               </div>
             ) : null}
@@ -168,16 +172,15 @@ function RefreshControlledInputs({ item, adv, cfg, result, isFree }: {
         )}
       </div>
 
-      <div className="mt-2">
-        <label className="block text-[11px] font-medium text-slate-700 mb-1">{volumeLabel}</label>
-        <div className="flex items-center gap-2">
-          <div className="flex-1 min-w-0">
+      <div className="mt-2 rounded-lg border border-slate-200 p-2">
+        <div className="flex items-center gap-2 flex-wrap">
+          <label className="text-[11px] font-medium text-slate-700 shrink-0">{volumeLabel}</label>
+          <div className="w-60 shrink-0">
             <NumberSpinner value={volumePerRun} onChange={(v) => adv.setItemVolumePerRun(item.key, v)} ariaLabel={`${item.label} — ${volumeLabel}`} suffix={item.unitLabel} />
           </div>
-          <div className="text-right min-w-[90px] shrink-0">
-            <div className="text-[9px] uppercase tracking-wide text-slate-500">Credits / Year</div>
-            <div className={`text-sm font-semibold tabular-nums ${isFree ? 'text-emerald-700' : 'text-slate-900'}`}>{isFree ? 'FREE' : fmtCredits(result.annualCredits)}</div>
-            <div className="text-[10px] text-slate-500 tabular-nums">{fmtUSD(result.annualCostUSD)}</div>
+          <div className="ml-auto text-right shrink-0">
+            <span className={`text-sm font-semibold tabular-nums ${isFree ? 'text-emerald-700' : 'text-slate-900'}`}>{isFree ? 'FREE' : fmtCreditsLabel(result.annualCredits)}</span>
+            <span className="text-[10px] text-slate-500 tabular-nums ml-1.5">{fmtUSD(result.annualCostUSD)} · Cr/Year</span>
           </div>
         </div>
       </div>
@@ -188,6 +191,7 @@ function RefreshControlledInputs({ item, adv, cfg, result, isFree }: {
 function LegacyPeriodInputs({ item, adv, result, costPerCreditUSD, isFree, streamingNote }: {
   item: RateItem; adv: ReturnType<typeof useCalculatorAdvanced>; result: ItemResult; costPerCreditUSD: number; isFree: boolean; streamingNote?: string;
 }) {
+  const theme = getPhaseTheme(item.phase);
   const period = adv.state.legacyPeriods[item.key] ?? 'year';
   const volume = adv.state.legacyVolumes[item.key] ?? 0;
   const perPeriodCredits =
@@ -200,26 +204,26 @@ function LegacyPeriodInputs({ item, adv, result, costPerCreditUSD, isFree, strea
         <InfoTooltip description={streamingNote ?? 'This item runs continuously in real time.'} label="Why no refresh mode?" />
         <p className="text-[11px] text-rose-800 leading-snug">{streamingNote}</p>
       </div>
-      <div className="mt-2 rounded-lg border border-sky-200 bg-sky-50 p-2 flex items-center gap-2 flex-wrap">
-        <label className="text-[10px] uppercase font-bold tracking-wide text-sky-700">Input Unit</label>
+      <div className={`mt-2 rounded-lg border border-${theme.color}-200 bg-${theme.color}-50 p-2 flex items-center gap-2 flex-wrap`}>
+        <label className={`text-[10px] uppercase font-bold tracking-wide text-${theme.color}-700`}>Input Unit</label>
         <select value={period} onChange={(e) => adv.setLegacyPeriod(item.key, e.target.value as Period)}
-          className="border border-sky-300 bg-white rounded-md px-1.5 py-0.5 text-xs font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-sky-400">
+          aria-label={`${item.label} — Input Unit`}
+          className={`border border-${theme.color}-300 bg-white rounded-md px-1.5 py-0.5 text-xs font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-${theme.color}-400`}>
           <option value="day">Per Day</option>
           <option value="week">Per Week</option>
           <option value="month">Per Month</option>
           <option value="year">Per Year (default)</option>
         </select>
       </div>
-      <div className="mt-2">
-        <label className="block text-[11px] font-medium text-slate-700 mb-1">{item.unitLabel} {PERIOD_LABEL_PER[period]}</label>
-        <div className="flex items-center gap-2">
-          <div className="flex-1 min-w-0">
+      <div className="mt-2 rounded-lg border border-slate-200 p-2">
+        <div className="flex items-center gap-2 flex-wrap">
+          <label className="text-[11px] font-medium text-slate-700 shrink-0">{item.unitLabel} {PERIOD_LABEL_PER[period]}</label>
+          <div className="w-60 shrink-0">
             <NumberSpinner value={volume} onChange={(v) => adv.setLegacyVolume(item.key, v)} ariaLabel={`${item.label} volume`} suffix={item.unitLabel} />
           </div>
-          <div className="text-right min-w-[90px] shrink-0">
-            <div className="text-[9px] uppercase tracking-wide text-slate-500">Credits</div>
-            <div className={`text-sm font-semibold tabular-nums ${isFree ? 'text-emerald-700' : 'text-slate-900'}`}>{isFree ? 'FREE' : fmtCredits(perPeriodCredits)}</div>
-            <div className="text-[10px] text-slate-500 tabular-nums">{fmtUSD(perPeriodCost)}</div>
+          <div className="ml-auto text-right shrink-0">
+            <span className={`text-sm font-semibold tabular-nums ${isFree ? 'text-emerald-700' : 'text-slate-900'}`}>{isFree ? 'FREE' : fmtCreditsLabel(perPeriodCredits)}</span>
+            <span className="text-[10px] text-slate-500 tabular-nums ml-1.5">{fmtUSD(perPeriodCost)}</span>
           </div>
         </div>
       </div>
@@ -235,9 +239,9 @@ function ExampleBreakdownSection({ item, adv, cfg, result, isPipelineDriven }: {
     return (
       <div className="space-y-1">
         <div>Sum of every pipeline row's (Volume per Run ÷ {item.unitDivisor.toLocaleString()}) × Rate × Runs/Year assigned to this item below.</div>
-        <div>Daily credits: <strong>{fmtCredits(result.dailyCredits)}</strong><span className="text-slate-400"> · {fmtUSD(result.dailyCostUSD)}</span></div>
-        <div>Monthly credits: <strong>{fmtCredits(result.monthlyCredits)}</strong><span className="text-slate-400"> · {fmtUSD(result.monthlyCostUSD)}</span></div>
-        <div>Annual credits: <strong>{fmtCredits(result.annualCredits)}</strong><span className="text-slate-400"> · {fmtUSD(result.annualCostUSD)}</span></div>
+        <div>Daily credits: <strong>{fmtCredits(result.dailyCredits)}</strong><span className="text-slate-500"> · {fmtUSD(result.dailyCostUSD)}</span></div>
+        <div>Monthly credits: <strong>{fmtCredits(result.monthlyCredits)}</strong><span className="text-slate-500"> · {fmtUSD(result.monthlyCostUSD)}</span></div>
+        <div>Annual credits: <strong>{fmtCredits(result.annualCredits)}</strong><span className="text-slate-500"> · {fmtUSD(result.annualCostUSD)}</span></div>
       </div>
     );
   }
@@ -261,9 +265,9 @@ function ExampleBreakdownSection({ item, adv, cfg, result, isPipelineDriven }: {
         {!isStreamingMode ? <div>Frequency: <strong>{RUN_FREQUENCY_META[frequency].label}</strong> ({runs.toLocaleString()} runs/yr)</div> : <div>Runs continuously — <strong>365</strong> day-equivalents/yr</div>}
         {showOverhead ? <div>Overhead multiplier: <strong>{overheadFactor.toFixed(2)}</strong> (from {adv.state.overheadPct}% overhead)</div> : null}
         <div>Formula: <code className="text-[11px]">{formulaParts.join(' ')}</code></div>
-        <div>Daily credits: <strong>{fmtCredits(result.dailyCredits)}</strong><span className="text-slate-400"> · {fmtUSD(result.dailyCostUSD)}</span></div>
-        <div>Monthly credits: <strong>{fmtCredits(result.monthlyCredits)}</strong><span className="text-slate-400"> · {fmtUSD(result.monthlyCostUSD)}</span></div>
-        <div>Annual credits: <strong>{fmtCredits(result.annualCredits)}</strong><span className="text-slate-400"> · {fmtUSD(result.annualCostUSD)}</span></div>
+        <div>Daily credits: <strong>{fmtCredits(result.dailyCredits)}</strong><span className="text-slate-500"> · {fmtUSD(result.dailyCostUSD)}</span></div>
+        <div>Monthly credits: <strong>{fmtCredits(result.monthlyCredits)}</strong><span className="text-slate-500"> · {fmtUSD(result.monthlyCostUSD)}</span></div>
+        <div>Annual credits: <strong>{fmtCredits(result.annualCredits)}</strong><span className="text-slate-500"> · {fmtUSD(result.annualCostUSD)}</span></div>
       </div>
     );
   }
@@ -278,12 +282,12 @@ function ExampleBreakdownSection({ item, adv, cfg, result, isPipelineDriven }: {
   return (
     <div className="space-y-1">
       <div>Rate ({adv.state.environment}): <strong>{rate}</strong> credits per <em>{item.unit.toLowerCase()}</em></div>
-      <div>Annualizer: <strong>{multiplier}</strong><span className="text-slate-400"> ({MULTIPLIER_NOTE[period]})</span></div>
+      <div>Annualizer: <strong>{multiplier}</strong><span className="text-slate-500"> ({MULTIPLIER_NOTE[period]})</span></div>
       {showOverhead ? <div>Overhead multiplier: <strong>{overheadFactor.toFixed(2)}</strong> (from {adv.state.overheadPct}% overhead)</div> : null}
       <div>Formula: <code className="text-[11px]">{formulaParts.join(' ')}</code></div>
-      <div>Per-period credits ({PERIOD_WORD[period]}): <strong>{fmtCredits(perPeriodCredits)}</strong><span className="text-slate-400"> · {fmtUSD(perPeriodCost)}</span></div>
-      <div>Monthly credits: <strong>{fmtCredits(result.monthlyCredits)}</strong><span className="text-slate-400"> · {fmtUSD(result.monthlyCostUSD)}</span></div>
-      <div>Annual credits: <strong>{fmtCredits(result.annualCredits)}</strong><span className="text-slate-400"> · {fmtUSD(result.annualCostUSD)}</span></div>
+      <div>Per-period credits ({PERIOD_WORD[period]}): <strong>{fmtCredits(perPeriodCredits)}</strong><span className="text-slate-500"> · {fmtUSD(perPeriodCost)}</span></div>
+      <div>Monthly credits: <strong>{fmtCredits(result.monthlyCredits)}</strong><span className="text-slate-500"> · {fmtUSD(result.monthlyCostUSD)}</span></div>
+      <div>Annual credits: <strong>{fmtCredits(result.annualCredits)}</strong><span className="text-slate-500"> · {fmtUSD(result.annualCostUSD)}</span></div>
     </div>
   );
 }
