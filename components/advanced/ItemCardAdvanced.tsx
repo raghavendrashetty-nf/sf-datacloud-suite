@@ -1,13 +1,15 @@
 'use client';
 
-import type { Environment, ItemResult, Period, RateItem } from '@/lib/types';
+import { useState } from 'react';
+import type { Environment, ItemResult, Period, RateItem, RatesConfig } from '@/lib/types';
 import { fmtCredits, fmtUSD } from '@/lib/formatters';
 import { getPhaseTheme } from '../PhaseTheme';
 import NumberSpinner from '../NumberSpinner';
 import CollapsibleSection from '../CollapsibleSection';
 import InfoTooltip from '../InfoTooltip';
-import { getPhaseRefreshConfig, REFRESH_MODE_META, runsPerYearFor, RUN_FREQUENCY_META, type RefreshMode, type RunFrequency } from '@/lib/refreshModes';
+import { getPhaseRefreshConfig, REFRESH_MODE_META, runsPerYearFor, RUN_FREQUENCY_META, type PipelineType, type RefreshMode, type RunFrequency } from '@/lib/refreshModes';
 import { PIPELINE_DRIVEN_ITEM_KEYS } from '@/lib/pipeline';
+import PipelineSection from './PipelineBuilder';
 import type { useCalculatorAdvanced } from '@/hooks/useCalculatorAdvanced';
 
 const PERIOD_LABEL_PER: Record<Period, string> = { day: '/ day', week: '/ week', month: '/ month', year: '/ year' };
@@ -23,83 +25,96 @@ interface Props {
   costPerCreditUSD: number;
   result: ItemResult;
   adv: ReturnType<typeof useCalculatorAdvanced>;
+  rates: RatesConfig;
 }
 
-export default function ItemCardAdvanced({ item, environment, costPerCreditUSD, result, adv }: Props) {
+export default function ItemCardAdvanced({ item, environment, costPerCreditUSD, result, adv, rates }: Props) {
+  const [expanded, setExpanded] = useState(false);
   const theme = getPhaseTheme(item.phase);
   const rate = item.credits[environment] ?? 0;
   const isFree = rate === 0;
   const cfg = getPhaseRefreshConfig(item.phase);
   const isPipelineDriven = item.key === PIPELINE_DRIVEN_ITEM_KEYS.batch || item.key === PIPELINE_DRIVEN_ITEM_KEYS.streaming;
-  const pipelineCount = isPipelineDriven
-    ? adv.state.pipelines.filter((p) => (item.key === PIPELINE_DRIVEN_ITEM_KEYS.streaming) === (p.runMode === 'streaming')).length
-    : 0;
 
   return (
     <div className={`card p-3 relative border-t-4 border-t-${theme.color}-500 ${isFree ? 'bg-emerald-50/30' : ''}`}>
-      <div className="flex items-start justify-between gap-2">
-        <h3 className="text-sm font-semibold text-slate-900 flex-1 min-w-0 leading-snug">{item.label}</h3>
+      <button type="button" onClick={() => setExpanded((e) => !e)} aria-expanded={expanded}
+        className="w-full flex items-center gap-2 text-left -m-1 p-1 rounded-lg hover:bg-slate-50 transition-colors">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
+          className={`w-4 h-4 text-slate-400 shrink-0 transition-transform ${expanded ? '' : '-rotate-90'}`}>
+          <polyline points="6 9 12 15 18 9" />
+        </svg>
+        <h3 className="text-sm font-semibold text-slate-900 flex-1 min-w-0 leading-snug truncate">{item.label}</h3>
         {isFree ? <span className="chip bg-emerald-500 text-white font-bold shrink-0" title="This item is free">FREE</span> : null}
-      </div>
-      <p className="text-[11px] text-slate-500 mt-1 leading-snug">{item.description}</p>
+        {!expanded ? (
+          <span className="text-xs text-slate-500 tabular-nums shrink-0">
+            {isFree ? 'free' : `${fmtCredits(result.annualCredits)} cr/yr`}
+          </span>
+        ) : null}
+      </button>
 
-      {isPipelineDriven ? (
-        <PipelineDrivenBlock result={result} isFree={isFree} pipelineCount={pipelineCount} />
-      ) : cfg.hasRefreshControls ? (
-        <RefreshControlledInputs item={item} adv={adv} cfg={cfg} result={result} isFree={isFree} />
-      ) : (
-        <LegacyPeriodInputs item={item} adv={adv} result={result} costPerCreditUSD={costPerCreditUSD} isFree={isFree} streamingNote={cfg.streamingNote} />
-      )}
+      {expanded ? (
+        <>
+          <p className="text-[11px] text-slate-500 mt-2 leading-snug">{item.description}</p>
 
-      {item.supportsInitial ? (
-        <div className={`mt-2 rounded-lg bg-${theme.color}-50 border border-${theme.color}-100 p-2`}>
-          <label className="block text-[11px] font-semibold text-slate-800 mb-1">{item.initialLabel} (Day 0, one-time)</label>
-          <div className="flex items-center gap-2">
-            <div className="flex-1 min-w-0">
-              <NumberSpinner value={adv.state.itemInitials[item.key] ?? 0} onChange={(v) => adv.setItemInitial(item.key, v)} ariaLabel={`${item.label} — ${item.initialLabel}`} suffix={item.unitLabel} />
+          {isPipelineDriven ? (
+            <PipelineDrivenBlock item={item} adv={adv} rates={rates} result={result} isFree={isFree} />
+          ) : cfg.hasRefreshControls ? (
+            <RefreshControlledInputs item={item} adv={adv} cfg={cfg} result={result} isFree={isFree} />
+          ) : (
+            <LegacyPeriodInputs item={item} adv={adv} result={result} costPerCreditUSD={costPerCreditUSD} isFree={isFree} streamingNote={cfg.streamingNote} />
+          )}
+
+          {item.supportsInitial ? (
+            <div className={`mt-2 rounded-lg bg-${theme.color}-50 border border-${theme.color}-100 p-2`}>
+              <label className="block text-[11px] font-semibold text-slate-800 mb-1">{item.initialLabel} (Day 0, one-time)</label>
+              <div className="flex items-center gap-2">
+                <div className="flex-1 min-w-0">
+                  <NumberSpinner value={adv.state.itemInitials[item.key] ?? 0} onChange={(v) => adv.setItemInitial(item.key, v)} ariaLabel={`${item.label} — ${item.initialLabel}`} suffix={item.unitLabel} />
+                </div>
+                <div className="text-right min-w-[90px] shrink-0">
+                  <div className="text-[9px] uppercase tracking-wide text-slate-500">Credits</div>
+                  <div className={`text-sm font-semibold tabular-nums ${isFree ? 'text-emerald-700' : 'text-slate-900'}`}>{isFree ? 'FREE' : fmtCredits(result.initialCredits)}</div>
+                  <div className="text-[10px] text-slate-500 tabular-nums">{fmtUSD(result.initialCostUSD)}</div>
+                </div>
+              </div>
             </div>
-            <div className="text-right min-w-[90px] shrink-0">
-              <div className="text-[9px] uppercase tracking-wide text-slate-500">Credits</div>
-              <div className={`text-sm font-semibold tabular-nums ${isFree ? 'text-emerald-700' : 'text-slate-900'}`}>{isFree ? 'FREE' : fmtCredits(result.initialCredits)}</div>
-              <div className="text-[10px] text-slate-500 tabular-nums">{fmtUSD(result.initialCostUSD)}</div>
+          ) : null}
+
+          <CollapsibleSection title="Example Breakdown">
+            <ExampleBreakdownSection item={item} adv={adv} cfg={cfg} result={result} isPipelineDriven={isPipelineDriven} />
+          </CollapsibleSection>
+
+          <CollapsibleSection title="Usage Details">
+            <div className="space-y-1">
+              <div><strong>Processing Rate:</strong> {item.processingRateNote}</div>
+              <div><strong>Note:</strong> {item.usageNote}</div>
             </div>
-          </div>
-        </div>
+          </CollapsibleSection>
+        </>
       ) : null}
-
-      <CollapsibleSection title="Example Breakdown">
-        <ExampleBreakdownSection item={item} adv={adv} cfg={cfg} result={result} isPipelineDriven={isPipelineDriven} />
-      </CollapsibleSection>
-
-      <CollapsibleSection title="Usage Details">
-        <div className="space-y-1">
-          <div><strong>Processing Rate:</strong> {item.processingRateNote}</div>
-          <div><strong>Note:</strong> {item.usageNote}</div>
-        </div>
-      </CollapsibleSection>
     </div>
   );
 }
 
-function PipelineDrivenBlock({ result, isFree, pipelineCount }: { result: ItemResult; isFree: boolean; pipelineCount: number }) {
+function PipelineDrivenBlock({ item, adv, rates, result, isFree }: {
+  item: RateItem; adv: ReturnType<typeof useCalculatorAdvanced>; rates: RatesConfig; result: ItemResult; isFree: boolean;
+}) {
+  const kind: PipelineType = item.key === PIPELINE_DRIVEN_ITEM_KEYS.streaming ? 'streaming' : 'batch';
   return (
-    <div className="mt-2 rounded-lg border border-indigo-200 bg-indigo-50 p-2">
-      <div className="flex items-center justify-between gap-2">
-        <div>
-          <div className="text-[10px] uppercase tracking-wide text-indigo-700 font-bold">Derived from Pipelines</div>
-          <p className="text-[11px] text-indigo-800 mt-0.5">
-            {pipelineCount > 0 ? `${pipelineCount} pipeline${pipelineCount === 1 ? '' : 's'} configured below.` : 'No pipelines configured yet — add one below.'}
-          </p>
-        </div>
-        <a href="#pipeline-builder" className="text-[10px] text-indigo-700 underline underline-offset-2 shrink-0">Jump to Pipelines ↓</a>
-      </div>
-      <div className="mt-2 flex items-center justify-between">
-        <span className="text-[9px] uppercase tracking-wide text-slate-500">Annual Credits</span>
+    <div className="mt-2 space-y-2">
+      <div className="rounded-lg border border-indigo-200 bg-indigo-50 p-2 flex items-center justify-between">
+        <span className="text-[10px] uppercase tracking-wide text-indigo-700 font-bold">Annual Credits (from Pipelines below)</span>
         <div className="text-right">
           <div className={`text-sm font-semibold tabular-nums ${isFree ? 'text-emerald-700' : 'text-slate-900'}`}>{isFree ? 'FREE' : fmtCredits(result.annualCredits)}</div>
           <div className="text-[10px] text-slate-500 tabular-nums">{fmtUSD(result.annualCostUSD)}</div>
         </div>
       </div>
+      <PipelineSection
+        type={kind} title={kind === 'batch' ? 'Batch Pipelines' : 'Streaming Pipelines'}
+        pipelines={adv.state.pipelines} rates={rates} environment={adv.state.environment} overheadPct={adv.state.overheadPct}
+        onAdd={adv.addPipeline} onUpdate={adv.updatePipeline} onRemove={adv.removePipeline}
+      />
     </div>
   );
 }
