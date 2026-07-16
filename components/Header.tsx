@@ -10,7 +10,8 @@ export default function Header() {
         </Link>
         <nav className="flex items-center gap-4 text-sm">
           <Link href="/" className="text-slate-600 hover:text-slate-900">Home</Link>
-          <Link href="/credit-calculator" className="text-slate-600 hover:text-slate-900">Credit Calculator</Link>
+          <Link href="/credit-calculator" className="text-slate-600 hover:text-slate-900">Calculator (Basic)</Link>
+          <Link href="/credit-calculator/advanced" className="text-slate-600 hover:text-slate-900">Calculator (Advanced)</Link>
           <Link href="/data-readiness" className="text-slate-600 hover:text-slate-900">Data Readiness</Link>
         </nav>
       </div>

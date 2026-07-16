@@ -5,11 +5,12 @@ import Link from 'next/link';
 import Header from '@/components/Header';
 import CalculatorSidebar from '@/components/CalculatorSidebar';
 import ResultsSummary from '@/components/ResultsSummary';
-import ItemCard from '@/components/ItemCard';
+import ItemCardAdvanced from '@/components/advanced/ItemCardAdvanced';
+import PipelineBuilder from '@/components/advanced/PipelineBuilder';
 import BackToTopButton from '@/components/BackToTopButton';
 import RateSheetManager from '@/components/RateSheetManager';
 import { useRates } from '@/hooks/useRates';
-import { useCalculator } from '@/hooks/useCalculator';
+import { useCalculatorAdvanced } from '@/hooks/useCalculatorAdvanced';
 import { PHASES } from '@/components/PhaseTheme';
 import type { RateItem } from '@/lib/types';
 
@@ -22,9 +23,10 @@ function ChevronDown({ className = 'w-4 h-4' }: { className?: string }) {
   );
 }
 
-export default function CreditCalculatorPage() {
+export default function CreditCalculatorAdvancedPage() {
   const { rates, setRates, resetRates } = useRates();
-  const { inputs, result, setEnvironment, setCost, setOverhead, setItemVolume, setItemInitial, setItemPeriod, reset } = useCalculator(rates);
+  const adv = useCalculatorAdvanced(rates);
+  const { state, inputs, result, setEnvironment, setCost, setOverhead, reset } = adv;
   const [rateManagerOpen, setRateManagerOpen] = useState(false);
   const chartsRef = useRef<HTMLDivElement>(null);
 
@@ -71,26 +73,27 @@ export default function CreditCalculatorPage() {
       <div className="max-w-[1600px] mx-auto px-4 sm:px-6 py-6">
         <div className="mb-6">
           <div className="flex items-center gap-2 flex-wrap">
-            <h1 className="text-2xl font-bold text-slate-900">Credit Consumption Calculator — Basic</h1>
-            <span className="chip bg-sky-100 text-sky-700 font-semibold">Simple</span>
+            <h1 className="text-2xl font-bold text-slate-900">Credit Consumption Calculator — Advanced</h1>
+            <span className="chip bg-indigo-100 text-indigo-700 font-semibold">Refresh Modes &amp; Pipelines</span>
           </div>
           <p className="text-sm text-slate-600 mt-1">
-            Discovery-phase estimate based on the Salesforce Data Cloud Platform Services rate sheet.
+            Discovery/documentation-grade estimate: model Refresh Mode &amp; Run Frequency per phase and build out real Data Ingestion pipelines.
           </p>
           <p className="text-xs text-slate-400 mt-1">
             Rate source: <a href={rates.meta.url} target="_blank" rel="noreferrer" className="underline">{rates.meta.source}</a>
-            {' · '}Need Refresh Mode &amp; Pipeline-level modeling?{' '}
-            <Link href="/credit-calculator/advanced" className="underline text-indigo-600 hover:text-indigo-800">Try the Advanced Calculator</Link>
+            {' · '}<Link href="/credit-calculator" className="underline">Switch to Basic Calculator</Link>
           </p>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
           <div className="lg:col-span-2 lg:sticky lg:top-20 lg:self-start">
             <CalculatorSidebar
-              environment={inputs.environment} costPerCreditUSD={inputs.costPerCreditUSD} overheadPct={inputs.overheadPct}
+              environment={state.environment} costPerCreditUSD={state.costPerCreditUSD} overheadPct={state.overheadPct}
               setEnvironment={setEnvironment} setCost={setCost} setOverhead={setOverhead} reset={reset}
               onOpenRateManager={() => setRateManagerOpen(true)} rateSheetUrl={rates.meta.url}
               rates={rates} inputs={inputs} result={result} chartsRef={chartsRef}
+              pipelines={state.pipelines}
+              advanced={{ itemRefreshModes: state.itemRefreshModes, itemFrequencies: state.itemFrequencies, itemManualRuns: state.itemManualRuns }}
             />
           </div>
 
@@ -124,16 +127,14 @@ export default function CreditCalculatorPage() {
                     <div className="px-3 pb-3 pt-1 border-t border-slate-100">
                       <div className="grid grid-cols-1 xl:grid-cols-2 gap-3 mt-3">
                         {items.map((item) => (
-                          <ItemCard key={item.key} item={item} environment={inputs.environment}
-                            itemPeriod={inputs.itemPeriods[item.key] ?? 'year'}
-                            volume={inputs.itemVolumes[item.key] ?? 0} initial={inputs.itemInitials[item.key] ?? 0}
-                            overheadPct={inputs.overheadPct} costPerCreditUSD={inputs.costPerCreditUSD}
-                            result={result.perItem[item.key]}
-                            onVolumeChange={(v) => setItemVolume(item.key, v)}
-                            onInitialChange={(v) => setItemInitial(item.key, v)}
-                            onPeriodChange={(p) => setItemPeriod(item.key, p)} />
+                          <ItemCardAdvanced key={item.key} item={item} environment={state.environment}
+                            costPerCreditUSD={state.costPerCreditUSD} result={result.perItem[item.key]} adv={adv} />
                         ))}
                       </div>
+                      {phaseKey === 'ingestion' ? (
+                        <PipelineBuilder pipelines={state.pipelines} rates={rates} environment={state.environment} overheadPct={state.overheadPct}
+                          onAdd={adv.addPipeline} onUpdate={adv.updatePipeline} onRemove={adv.removePipeline} />
+                      ) : null}
                     </div>
                   ) : null}
                 </section>
@@ -141,9 +142,9 @@ export default function CreditCalculatorPage() {
             })}
           </div>
 
-      <div className="lg:col-span-3 lg:sticky lg:top-20 lg:self-start lg:max-h-[calc(100vh-6rem)] lg:overflow-y-auto lg:pr-1 lg:z-30" ref={chartsRef}>
-        <ResultsSummary result={result} />
-      </div>
+          <div className="lg:col-span-3 lg:sticky lg:top-20 lg:self-start lg:max-h-[calc(100vh-6rem)] lg:overflow-y-auto lg:pr-1 lg:z-30" ref={chartsRef}>
+            <ResultsSummary result={result} />
+          </div>
         </div>
       </div>
 
