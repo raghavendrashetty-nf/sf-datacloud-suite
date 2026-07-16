@@ -37,7 +37,7 @@ export default function RoadmapFeaturePage({ eyebrow, title, badge, badgeColor, 
                 </div>
                 <div className="flex-1 min-w-[200px]">
                   <div className="flex items-center gap-2 flex-wrap">
-                    <span className="text-xs font-semibold uppercase tracking-widest text-slate-400">{eyebrow}</span>
+                    <span className="text-xs font-semibold uppercase tracking-widest text-slate-500">{eyebrow}</span>
                     <span className={`chip font-bold ${badgeColor === 'amber' ? 'bg-amber-100 text-amber-700' : 'bg-slate-200 text-slate-600'}`}>{badge}</span>
                   </div>
                   <h1 className="mt-1 text-2xl sm:text-3xl font-bold text-slate-900">{title}</h1>
@@ -46,7 +46,7 @@ export default function RoadmapFeaturePage({ eyebrow, title, badge, badgeColor, 
               </div>
 
               <div className="mt-8">
-                <h2 className="text-xs font-bold uppercase tracking-widest text-slate-400 mb-4">How it will work</h2>
+                <h2 className="text-xs font-bold uppercase tracking-widest text-slate-500 mb-4">How it will work</h2>
                 <ol className="space-y-4">
                   {steps.map((step, i) => (
                     <li key={step.title} className="flex gap-3">
@@ -68,7 +68,7 @@ export default function RoadmapFeaturePage({ eyebrow, title, badge, badgeColor, 
             </div>
           </div>
 
-          <p className="mt-6 text-center text-xs text-slate-400">
+          <p className="mt-6 text-center text-xs text-slate-500">
             This feature is on the roadmap and not yet available. Explore what's live today:{' '}
             <Link href="/credit-calculator" className="underline hover:text-slate-700">Credit Calculator</Link>{' '}or{' '}
             <Link href="/data-readiness" className="underline hover:text-slate-700">Data Readiness Assessment</Link>.

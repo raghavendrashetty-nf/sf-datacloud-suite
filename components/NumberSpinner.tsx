@@ -1,6 +1,7 @@
 'use client';
 
-import { ChangeEvent, FocusEvent, useEffect, useState } from 'react';
+import { ChangeEvent, useEffect, useState } from 'react';
+import { useSelectAllOnFocus } from '@/hooks/useSelectAllOnFocus';
 
 interface Props { value: number; onChange: (n: number) => void; ariaLabel: string; suffix?: string; min?: number; }
 
@@ -16,6 +17,7 @@ function stepFor(v: number): number {
 
 export default function NumberSpinner({ value, onChange, ariaLabel, suffix, min = 0 }: Props) {
   const [display, setDisplay] = useState<string>(value === 0 ? '' : String(value));
+  const selectAll = useSelectAllOnFocus();
   useEffect(() => {
     if (value === 0) setDisplay((prev) => (prev === '' || Number(prev) === 0 ? prev : ''));
     else setDisplay(String(value));
@@ -26,7 +28,6 @@ export default function NumberSpinner({ value, onChange, ariaLabel, suffix, min 
     if (raw === '' || raw === '.') onChange(0);
     else { const n = Number(raw); if (!isNaN(n)) onChange(Math.max(min, n)); }
   }
-  function handleFocus(e: FocusEvent<HTMLInputElement>) { e.target.select(); }
   function handleBlur() { if (display.endsWith('.')) setDisplay(display.slice(0, -1)); }
   function dec() {
     const current = Number(display) || 0;
@@ -47,7 +48,7 @@ export default function NumberSpinner({ value, onChange, ariaLabel, suffix, min 
       <button type="button" onClick={dec} aria-label={`Decrease ${ariaLabel}`}
         className="px-2 text-slate-500 hover:bg-slate-100 shrink-0">-</button>
       <input type="text" inputMode="numeric" value={display}
-        onChange={handleChange} onFocus={handleFocus} onBlur={handleBlur}
+        onChange={handleChange} onFocus={selectAll.onFocus} onMouseUp={selectAll.onMouseUp} onBlur={handleBlur}
         placeholder="0" aria-label={ariaLabel}
         className="flex-1 min-w-0 w-full text-right px-2 py-1.5 text-sm outline-none tabular-nums placeholder:text-slate-300" />
       {suffix ? <span className="px-2 flex items-center text-xs text-slate-500 border-l border-slate-200 bg-slate-50 shrink-0">{suffix}</span> : null}

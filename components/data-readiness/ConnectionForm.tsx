@@ -119,7 +119,7 @@ export default function ConnectionForm({ onConnected }: Props) {
         </div>
       </div>
       <div>
-        <label className="block text-xs font-semibold text-slate-700 mb-1 uppercase tracking-wide">Security Token <span className="text-slate-400 font-normal normal-case">(optional)</span></label>
+        <label className="block text-xs font-semibold text-slate-700 mb-1 uppercase tracking-wide">Security Token <span className="text-slate-500 font-normal normal-case">(optional)</span></label>
         <div className="relative">
           <input type={showToken ? 'text' : 'password'} value={securityToken} onChange={(e) => setSecurityToken(e.target.value)}
             className="w-full border border-slate-300 rounded-lg px-3 py-2 pr-16 text-sm font-mono focus:border-emerald-400 focus:ring-2 focus:ring-emerald-200 outline-none" />
@@ -157,7 +157,7 @@ export default function ConnectionForm({ onConnected }: Props) {
         </div>
       ) : null}
       <div>
-        <label className="block text-xs font-semibold text-slate-700 mb-1 uppercase tracking-wide">Instance URL <span className="text-slate-400 font-normal normal-case">(optional)</span></label>
+        <label className="block text-xs font-semibold text-slate-700 mb-1 uppercase tracking-wide">Instance URL <span className="text-slate-500 font-normal normal-case">(optional)</span></label>
         <input type="url" value={instanceUrl} onChange={(e) => setInstanceUrl(e.target.value)}
           placeholder="https://mydomain--full.sandbox.my.salesforce.com"
           className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm font-mono focus:border-emerald-400 focus:ring-2 focus:ring-emerald-200 outline-none" />

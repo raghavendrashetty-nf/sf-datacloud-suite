@@ -115,7 +115,10 @@ export const PHASE_REFRESH_CONFIG: Record<string, PhaseRefreshConfig> = {
   compute: {
     hasRefreshControls: true,
     modes: ['on_demand', 'scheduled'],
-    frequenciesByMode: { scheduled: ['hourly', 'daily', 'weekly'] },
+    // On-demand/event-triggered execution has no fixed schedule by definition, so - same as
+    // Insights' "Not Scheduled" mode - it maps to the single 'manual' option, which reveals an
+    // "Estimated Runs/Year" input instead of a picklist of cadences that don't actually apply.
+    frequenciesByMode: { on_demand: ['manual'], scheduled: ['hourly', 'daily', 'weekly'] },
     volumeLabelByMode: {
       on_demand: 'Compute Units per Invocation',
       scheduled: 'Compute Units per Run'

@@ -18,10 +18,10 @@ export default function StepIndicator({ steps, currentIndex, onStepClick }: Prop
               className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold transition-colors ${
                 isCurrent ? 'bg-emerald-600 text-white shadow'
                 : isDone ? 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200'
-                : 'bg-slate-100 text-slate-400'
+                : 'bg-slate-100 text-slate-500'
               } ${clickable ? 'cursor-pointer' : 'cursor-default'}`}>
               <span className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] ${
-                isCurrent ? 'bg-white/20' : isDone ? 'bg-emerald-600 text-white' : 'bg-white text-slate-400'
+                isCurrent ? 'bg-white/20' : isDone ? 'bg-emerald-600 text-white' : 'bg-white text-slate-500'
               }`}>
                 {isDone ? (
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" className="w-3 h-3">

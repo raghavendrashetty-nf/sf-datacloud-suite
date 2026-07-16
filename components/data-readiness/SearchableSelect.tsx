@@ -69,12 +69,12 @@ export default function SearchableSelect({
           onFocus={() => { setQuery(''); setOpen(true); }} onKeyDown={handleKey}
           placeholder={placeholder} disabled={disabled}
           className={`w-full border rounded-lg px-3 py-2 text-sm outline-none transition-colors ${
-            disabled ? 'border-slate-200 bg-slate-50 text-slate-400 cursor-not-allowed'
+            disabled ? 'border-slate-200 bg-slate-50 text-slate-500 cursor-not-allowed'
             : 'border-slate-300 bg-white focus:border-emerald-400 focus:ring-2 focus:ring-emerald-200'
           }`} />
         {selectedItem && !open ? (
           <button type="button" onClick={() => { commit(null); inputRef.current?.focus(); }}
-            aria-label="Clear selection" className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700 p-1">
+            aria-label="Clear selection" className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-700 p-1">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4">
               <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
             </svg>
@@ -84,7 +84,7 @@ export default function SearchableSelect({
       {open ? (
         <ul role="listbox" className="absolute z-30 mt-1 w-full max-h-72 overflow-auto bg-white border border-slate-200 rounded-lg shadow-lg text-sm">
           {filtered.length === 0 ? (
-            <li className="px-3 py-2 text-slate-400 italic">{emptyMessage}</li>
+            <li className="px-3 py-2 text-slate-500 italic">{emptyMessage}</li>
           ) : filtered.map((item, i) => (
             <li key={item.value} role="option" aria-selected={i === highlighted}
               onMouseEnter={() => setHighlighted(i)}

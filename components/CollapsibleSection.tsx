@@ -9,11 +9,11 @@ export default function CollapsibleSection({ title, children, defaultOpen = fals
   return (
     <div className="mt-3">
       <button type="button" onClick={() => setOpen((o) => !o)}
-        className="w-full flex items-center gap-2.5 rounded-xl bg-indigo-100 hover:bg-indigo-200 transition-colors px-3 py-2 text-left"
+        className="w-full flex items-center gap-2.5 rounded-xl bg-indigo-100 hover:bg-indigo-200 transition-colors px-3 py-2 text-left focus:outline-none focus:ring-2 focus:ring-indigo-400"
         aria-expanded={open}>
         <span className="w-6 h-6 rounded-full bg-indigo-200 flex items-center justify-center shrink-0">
           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
-            className={`w-3.5 h-3.5 text-indigo-700 transition-transform ${open ? 'rotate-180' : ''}`}>
+            aria-hidden="true" className={`w-3.5 h-3.5 text-indigo-700 transition-transform ${open ? 'rotate-180' : ''}`}>
             <polyline points="6 9 12 15 18 9" />
           </svg>
         </span>

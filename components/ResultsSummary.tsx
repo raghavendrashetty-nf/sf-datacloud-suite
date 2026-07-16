@@ -10,7 +10,7 @@ function StatCard({ label, credits, cost }: { label: string; credits: number; co
     <div className="card p-3">
       <div className="text-[10px] font-semibold uppercase tracking-wide text-slate-500">{label}</div>
       <div className="mt-0.5 text-lg font-bold tabular-nums text-slate-900">{fmtCredits(credits)}</div>
-      <div className="text-[9px] font-medium uppercase tracking-wide text-slate-400">credits</div>
+      <div className="text-[9px] font-medium uppercase tracking-wide text-slate-500">credits</div>
       <div className="mt-0.5 text-xs tabular-nums text-slate-500">{fmtUSD(cost)}</div>
     </div>
   );
@@ -33,7 +33,7 @@ function FirstYearHero({ credits, cost }: { credits: number; cost: number }) {
 function DonutChart({ result }: { result: CalculationResult }) {
   const size = 160, cx = size / 2, cy = size / 2, r = 68, inner = 44;
   const total = result.perPhase.reduce((s, p) => s + p.annualCredits, 0);
-  if (total <= 0) return <div className="flex items-center justify-center h-[160px] w-full text-xs text-slate-400 text-center">Enter volumes to see distribution</div>;
+  if (total <= 0) return <div className="flex items-center justify-center h-[160px] w-full text-xs text-slate-500 text-center">Enter volumes to see distribution</div>;
   const nonZero = result.perPhase.filter((p) => p.annualCredits > 0);
   if (nonZero.length === 1) {
     const theme = getPhaseTheme(nonZero[0].phase);
@@ -133,8 +133,9 @@ export default function ResultsSummary({ result }: { result: CalculationResult }
         <div className="card p-3">
           <div className="flex items-center justify-between mb-1.5">
             <h3 className="text-[11px] font-semibold text-slate-900 uppercase tracking-wide">Phase Breakdown</h3>
-            <button type="button" onClick={() => setShowBar(false)} className="text-slate-400 hover:text-slate-700 p-1 -m-1">
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4">
+            <button type="button" onClick={() => setShowBar(false)} aria-label="Hide phase breakdown chart"
+              className="text-slate-500 hover:text-slate-700 p-1 -m-1 rounded focus:outline-none focus:ring-2 focus:ring-sky-400">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className="w-4 h-4">
                 <line x1="18" y1="20" x2="18" y2="10" /><line x1="12" y1="20" x2="12" y2="4" /><line x1="6" y1="20" x2="6" y2="14" />
               </svg>
             </button>

@@ -5,6 +5,7 @@ import type { Pipeline } from '@/lib/pipeline';
 import type { AdvancedPdfMeta } from '@/lib/pdfReport';
 import NumberSpinner from './NumberSpinner';
 import ExportPDFButton from './ExportPDFButton';
+import { useSelectAllOnFocus } from '@/hooks/useSelectAllOnFocus';
 import { RefObject } from 'react';
 
 interface Props {
@@ -16,6 +17,7 @@ interface Props {
 }
 
 export default function CalculatorSidebar({ environment, costPerCreditUSD, overheadPct, setEnvironment, setCost, setOverhead, reset, onOpenRateManager, rateSheetUrl, rates, inputs, result, chartsRef, pipelines, advanced }: Props) {
+  const selectAllCost = useSelectAllOnFocus();
   return (
     <aside className="no-print space-y-3">
       <div className="card p-3 space-y-3">
@@ -35,6 +37,7 @@ export default function CalculatorSidebar({ environment, costPerCreditUSD, overh
           <label className="block text-[10px] font-semibold text-slate-500 uppercase tracking-wide mb-1">Cost / Credit ($)</label>
           <input type="number" min={0} step="0.001" value={costPerCreditUSD}
             onChange={(e) => setCost(Number(e.target.value))}
+            onFocus={selectAllCost.onFocus} onMouseUp={selectAllCost.onMouseUp}
             className="w-full border border-slate-300 rounded-lg px-2 py-1 text-xs text-right" />
         </div>
         <div>

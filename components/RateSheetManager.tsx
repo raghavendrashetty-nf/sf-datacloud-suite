@@ -81,7 +81,7 @@ export default function RateSheetManager({ rates, onSave, onReset, onClose }: Pr
             <h2 className="text-lg font-bold text-slate-900">Rate Sheet Manager</h2>
             <p className="text-sm text-slate-500 mt-1">View, edit, upload, or fetch a new rate sheet.</p>
           </div>
-          <button onClick={onClose} className="text-slate-400 hover:text-slate-900 text-2xl leading-none" aria-label="Close">×</button>
+          <button onClick={onClose} className="text-slate-500 hover:text-slate-900 text-2xl leading-none" aria-label="Close">×</button>
         </div>
         <div className="p-5 space-y-6">
           <section className="rounded-xl border border-sky-100 bg-sky-50/50 p-4">
