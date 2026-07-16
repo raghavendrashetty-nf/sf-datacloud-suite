@@ -1,6 +1,8 @@
 'use client';
 
 import type { CalculationResult, CalculatorInputs, Environment, RatesConfig } from '@/lib/types';
+import type { Pipeline } from '@/lib/pipeline';
+import type { AdvancedPdfMeta } from '@/lib/pdfReport';
 import NumberSpinner from './NumberSpinner';
 import ExportPDFButton from './ExportPDFButton';
 import { RefObject } from 'react';
@@ -10,9 +12,10 @@ interface Props {
   setEnvironment: (e: Environment) => void; setCost: (n: number) => void; setOverhead: (n: number) => void;
   reset: () => void; onOpenRateManager: () => void; rateSheetUrl: string;
   rates: RatesConfig; inputs: CalculatorInputs; result: CalculationResult; chartsRef: RefObject<HTMLElement>;
+  pipelines?: Pipeline[]; advanced?: AdvancedPdfMeta;
 }
 
-export default function CalculatorSidebar({ environment, costPerCreditUSD, overheadPct, setEnvironment, setCost, setOverhead, reset, onOpenRateManager, rateSheetUrl, rates, inputs, result, chartsRef }: Props) {
+export default function CalculatorSidebar({ environment, costPerCreditUSD, overheadPct, setEnvironment, setCost, setOverhead, reset, onOpenRateManager, rateSheetUrl, rates, inputs, result, chartsRef, pipelines, advanced }: Props) {
   return (
     <aside className="no-print space-y-3">
       <div className="card p-3 space-y-3">
@@ -54,7 +57,7 @@ export default function CalculatorSidebar({ environment, costPerCreditUSD, overh
       </div>
       <div className="card p-3 space-y-2">
         <h2 className="text-[11px] font-bold text-slate-900 uppercase tracking-wider">Export & Reset</h2>
-        <ExportPDFButton rates={rates} inputs={inputs} result={result} chartsRef={chartsRef} />
+        <ExportPDFButton rates={rates} inputs={inputs} result={result} chartsRef={chartsRef} pipelines={pipelines} advanced={advanced} />
         <button type="button" onClick={reset}
           className="w-full text-xs text-slate-500 hover:text-rose-600 underline underline-offset-2">
           Reset all values

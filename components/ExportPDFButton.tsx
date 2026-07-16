@@ -2,16 +2,20 @@
 
 import { RefObject, useState } from 'react';
 import type { CalculationResult, CalculatorInputs, RatesConfig } from '@/lib/types';
-import { generatePDFReport } from '@/lib/pdfReport';
+import type { Pipeline } from '@/lib/pipeline';
+import { generatePDFReport, type AdvancedPdfMeta } from '@/lib/pdfReport';
 
-interface Props { rates: RatesConfig; inputs: CalculatorInputs; result: CalculationResult; chartsRef: RefObject<HTMLElement>; }
+interface Props {
+  rates: RatesConfig; inputs: CalculatorInputs; result: CalculationResult; chartsRef: RefObject<HTMLElement>;
+  pipelines?: Pipeline[]; advanced?: AdvancedPdfMeta;
+}
 
-export default function ExportPDFButton({ rates, inputs, result, chartsRef }: Props) {
+export default function ExportPDFButton({ rates, inputs, result, chartsRef, pipelines, advanced }: Props) {
   const [busy, setBusy] = useState(false);
   async function onClick() {
     if (busy) return;
     setBusy(true);
-    try { await generatePDFReport({ rates, inputs, result, chartsEl: chartsRef.current }); }
+    try { await generatePDFReport({ rates, inputs, result, chartsEl: chartsRef.current, pipelines, advanced }); }
     finally { setBusy(false); }
   }
   return (
