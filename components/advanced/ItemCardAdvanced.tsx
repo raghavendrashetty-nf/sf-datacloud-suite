@@ -59,7 +59,7 @@ export default function ItemCardAdvanced({ item, environment, costPerCreditUSD, 
           <p className="text-[11px] text-slate-500 mt-2 leading-snug">{item.description}</p>
 
           {isPipelineDriven ? (
-            <PipelineDrivenBlock item={item} adv={adv} rates={rates} result={result} isFree={isFree} />
+            <PipelineDrivenBlock item={item} adv={adv} rates={rates} />
           ) : cfg.hasRefreshControls ? (
             <RefreshControlledInputs item={item} adv={adv} cfg={cfg} result={result} isFree={isFree} />
           ) : (
@@ -68,14 +68,15 @@ export default function ItemCardAdvanced({ item, environment, costPerCreditUSD, 
 
           {item.supportsInitial ? (
             <div className={`mt-2 rounded-lg bg-${theme.color}-50 border border-${theme.color}-100 p-2`}>
-              <div className="flex items-center gap-2 flex-wrap">
-                <label className="text-[11px] font-semibold text-slate-800 shrink-0">{item.initialLabel} (Day 0, one-time)</label>
-                <div className="w-60 shrink-0">
+              <label className="block text-[11px] font-semibold text-slate-800 mb-1">{item.initialLabel} (Day 0, one-time)</label>
+              <div className="flex items-center gap-2">
+                <div className="flex-1 min-w-0 max-w-[15rem]">
                   <NumberSpinner value={adv.state.itemInitials[item.key] ?? 0} onChange={(v) => adv.setItemInitial(item.key, v)} ariaLabel={`${item.label} — ${item.initialLabel}`} suffix={item.unitLabel} />
                 </div>
-                <div className="ml-auto text-right shrink-0">
-                  <span className={`text-sm font-semibold tabular-nums ${isFree ? 'text-emerald-700' : 'text-slate-900'}`}>{isFree ? 'FREE' : fmtCreditsLabel(result.initialCredits)}</span>
-                  <span className="text-[10px] text-slate-500 tabular-nums ml-1.5">{fmtUSD(result.initialCostUSD)}</span>
+                <div className="ml-auto text-right shrink-0 text-sm">
+                  <span className={`font-semibold tabular-nums ${isFree ? 'text-emerald-700' : 'text-slate-900'}`}>{isFree ? 'FREE' : fmtCreditsLabel(result.initialCredits)}</span>
+                  <span className="text-slate-400"> | </span>
+                  <span className="text-slate-500 tabular-nums">{fmtUSD(result.initialCostUSD)}</span>
                 </div>
               </div>
             </div>
@@ -97,20 +98,12 @@ export default function ItemCardAdvanced({ item, environment, costPerCreditUSD, 
   );
 }
 
-function PipelineDrivenBlock({ item, adv, rates, result, isFree }: {
-  item: RateItem; adv: ReturnType<typeof useCalculatorAdvanced>; rates: RatesConfig; result: ItemResult; isFree: boolean;
+function PipelineDrivenBlock({ item, adv, rates }: {
+  item: RateItem; adv: ReturnType<typeof useCalculatorAdvanced>; rates: RatesConfig;
 }) {
-  const theme = getPhaseTheme(item.phase);
   const kind: PipelineType = item.key === PIPELINE_DRIVEN_ITEM_KEYS.streaming ? 'streaming' : 'batch';
   return (
-    <div className="mt-2 space-y-2">
-      <div className={`rounded-lg border border-${theme.color}-200 bg-${theme.color}-50 p-2 flex items-center justify-between`}>
-        <span className={`text-[10px] uppercase tracking-wide text-${theme.color}-700 font-bold`}>Annual Credits (from Pipelines below)</span>
-        <div className="text-right">
-          <div className={`text-sm font-semibold tabular-nums ${isFree ? 'text-emerald-700' : 'text-slate-900'}`}>{isFree ? 'FREE' : fmtCreditsLabel(result.annualCredits)}</div>
-          <div className="text-[10px] text-slate-500 tabular-nums">{fmtUSD(result.annualCostUSD)}</div>
-        </div>
-      </div>
+    <div className="mt-2">
       <PipelineSection
         type={kind} title={kind === 'batch' ? 'Batch Pipelines' : 'Streaming Pipelines'}
         pipelines={adv.state.pipelines} rates={rates} environment={adv.state.environment} overheadPct={adv.state.overheadPct}
@@ -136,51 +129,57 @@ function RefreshControlledInputs({ item, adv, cfg, result, isFree }: {
   return (
     <>
       <div className={`mt-2 rounded-lg border border-${theme.color}-200 bg-${theme.color}-50 p-2 space-y-2`}>
-        <div className="flex items-center gap-1.5">
-          <label className={`text-[10px] uppercase font-bold tracking-wide text-${theme.color}-700`}>Refresh Mode</label>
-          <InfoTooltip description={REFRESH_MODE_META[mode].description} docs={cfg.docs} />
+        <div className={`grid ${isStreamingMode ? 'grid-cols-1' : 'grid-cols-2'} gap-2`}>
+          <div>
+            <div className="flex items-center gap-1.5 mb-1">
+              <label className={`text-[10px] uppercase font-bold tracking-wide text-${theme.color}-700`}>Refresh Mode</label>
+              <InfoTooltip description={REFRESH_MODE_META[mode].description} docs={cfg.docs} />
+            </div>
+            <select
+              value={mode}
+              onChange={(e) => adv.setItemRefreshMode(item.key, item.phase, e.target.value as RefreshMode)}
+              aria-label={`${item.label} — Refresh Mode`}
+              className={`w-full border border-${theme.color}-300 bg-white rounded-md px-1.5 py-1 text-xs font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-${theme.color}-400`}
+            >
+              {cfg.modes.map((m) => <option key={m} value={m}>{REFRESH_MODE_META[m].label}</option>)}
+            </select>
+          </div>
+
+          {!isStreamingMode ? (
+            <div>
+              <label className={`block text-[10px] uppercase font-bold tracking-wide text-${theme.color}-700 mb-1`}>Run Frequency</label>
+              <select
+                value={frequency}
+                onChange={(e) => adv.setItemFrequency(item.key, e.target.value as RunFrequency)}
+                aria-label={`${item.label} — Run Frequency`}
+                className={`w-full border border-${theme.color}-300 bg-white rounded-md px-1.5 py-1 text-xs font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-${theme.color}-400`}
+              >
+                {availableFrequencies.map((f) => <option key={f} value={f}>{RUN_FREQUENCY_META[f].label}</option>)}
+              </select>
+            </div>
+          ) : null}
         </div>
-        <select
-          value={mode}
-          onChange={(e) => adv.setItemRefreshMode(item.key, item.phase, e.target.value as RefreshMode)}
-          aria-label={`${item.label} — Refresh Mode`}
-          className={`min-w-[9rem] border border-${theme.color}-300 bg-white rounded-md px-1.5 py-1 text-xs font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-${theme.color}-400`}
-        >
-          {cfg.modes.map((m) => <option key={m} value={m}>{REFRESH_MODE_META[m].label}</option>)}
-        </select>
 
         {isStreamingMode ? (
           <p className={`text-[10px] text-${theme.color}-700 italic`}>Streaming runs continuously — frequency is not applicable.</p>
-        ) : (
-          <>
-            <label className={`block text-[10px] uppercase font-bold tracking-wide text-${theme.color}-700`}>Run Frequency</label>
-            <select
-              value={frequency}
-              onChange={(e) => adv.setItemFrequency(item.key, e.target.value as RunFrequency)}
-              aria-label={`${item.label} — Run Frequency`}
-              className={`min-w-[9rem] border border-${theme.color}-300 bg-white rounded-md px-1.5 py-1 text-xs font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-${theme.color}-400`}
-            >
-              {availableFrequencies.map((f) => <option key={f} value={f}>{RUN_FREQUENCY_META[f].label}</option>)}
-            </select>
-            {frequency === 'manual' ? (
-              <div>
-                <label className={`block text-[10px] uppercase font-bold tracking-wide text-${theme.color}-700 mb-1`}>Estimated Runs / Year</label>
-                <NumberSpinner value={manualRuns} onChange={(v) => adv.setItemManualRuns(item.key, v)} ariaLabel={`${item.label} — runs per year`} min={1} />
-              </div>
-            ) : null}
-          </>
-        )}
+        ) : frequency === 'manual' ? (
+          <div>
+            <label className={`block text-[10px] uppercase font-bold tracking-wide text-${theme.color}-700 mb-1`}>Estimated Runs / Year</label>
+            <NumberSpinner value={manualRuns} onChange={(v) => adv.setItemManualRuns(item.key, v)} ariaLabel={`${item.label} — runs per year`} min={1} />
+          </div>
+        ) : null}
       </div>
 
       <div className="mt-2 rounded-lg border border-slate-200 p-2">
-        <div className="flex items-center gap-2 flex-wrap">
-          <label className="text-[11px] font-medium text-slate-700 shrink-0">{volumeLabel}</label>
-          <div className="w-60 shrink-0">
+        <label className="block text-[11px] font-medium text-slate-700 mb-1">{volumeLabel}</label>
+        <div className="flex items-center gap-2">
+          <div className="flex-1 min-w-0 max-w-[15rem]">
             <NumberSpinner value={volumePerRun} onChange={(v) => adv.setItemVolumePerRun(item.key, v)} ariaLabel={`${item.label} — ${volumeLabel}`} suffix={item.unitLabel} />
           </div>
-          <div className="ml-auto text-right shrink-0">
-            <span className={`text-sm font-semibold tabular-nums ${isFree ? 'text-emerald-700' : 'text-slate-900'}`}>{isFree ? 'FREE' : fmtCreditsLabel(result.annualCredits)}</span>
-            <span className="text-[10px] text-slate-500 tabular-nums ml-1.5">{fmtUSD(result.annualCostUSD)} · Cr/Year</span>
+          <div className="ml-auto text-right shrink-0 text-sm">
+            <span className={`font-semibold tabular-nums ${isFree ? 'text-emerald-700' : 'text-slate-900'}`}>{isFree ? 'FREE' : `${fmtCreditsLabel(result.annualCredits)} per Year`}</span>
+            <span className="text-slate-400"> | </span>
+            <span className="text-slate-500 tabular-nums">{fmtUSD(result.annualCostUSD)}</span>
           </div>
         </div>
       </div>
@@ -216,14 +215,15 @@ function LegacyPeriodInputs({ item, adv, result, costPerCreditUSD, isFree, strea
         </select>
       </div>
       <div className="mt-2 rounded-lg border border-slate-200 p-2">
-        <div className="flex items-center gap-2 flex-wrap">
-          <label className="text-[11px] font-medium text-slate-700 shrink-0">{item.unitLabel} {PERIOD_LABEL_PER[period]}</label>
-          <div className="w-60 shrink-0">
+        <label className="block text-[11px] font-medium text-slate-700 mb-1">{item.unitLabel} {PERIOD_LABEL_PER[period]}</label>
+        <div className="flex items-center gap-2">
+          <div className="flex-1 min-w-0 max-w-[15rem]">
             <NumberSpinner value={volume} onChange={(v) => adv.setLegacyVolume(item.key, v)} ariaLabel={`${item.label} volume`} suffix={item.unitLabel} />
           </div>
-          <div className="ml-auto text-right shrink-0">
-            <span className={`text-sm font-semibold tabular-nums ${isFree ? 'text-emerald-700' : 'text-slate-900'}`}>{isFree ? 'FREE' : fmtCreditsLabel(perPeriodCredits)}</span>
-            <span className="text-[10px] text-slate-500 tabular-nums ml-1.5">{fmtUSD(perPeriodCost)}</span>
+          <div className="ml-auto text-right shrink-0 text-sm">
+            <span className={`font-semibold tabular-nums ${isFree ? 'text-emerald-700' : 'text-slate-900'}`}>{isFree ? 'FREE' : `${fmtCreditsLabel(perPeriodCredits)} per ${PERIOD_WORD[period]}`}</span>
+            <span className="text-slate-400"> | </span>
+            <span className="text-slate-500 tabular-nums">{fmtUSD(perPeriodCost)}</span>
           </div>
         </div>
       </div>

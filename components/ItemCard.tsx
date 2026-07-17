@@ -76,32 +76,34 @@ export default function ItemCard({ item, environment, itemPeriod, volume, initia
       </div>
 
       <div className="mt-2 rounded-lg border border-slate-200 p-2">
-        <div className="flex items-center gap-2 flex-wrap">
-          <label className="text-[11px] font-medium text-slate-700 shrink-0">{primaryLabel}</label>
-          <div className="w-60 shrink-0">
+        <label className="block text-[11px] font-medium text-slate-700 mb-1">{primaryLabel}</label>
+        <div className="flex items-center gap-2">
+          <div className="flex-1 min-w-0 max-w-[15rem]">
             <NumberSpinner value={volume} onChange={onVolumeChange} ariaLabel={`${item.label} \u2014 ${primaryLabel}`} suffix={suffix} />
           </div>
-          <div className="ml-auto text-right shrink-0">
-            <span className={`text-sm font-semibold tabular-nums ${isFree ? 'text-emerald-700' : 'text-slate-900'}`}>
-              {isFree ? 'FREE' : fmtCreditsLabel(perPeriodCredits)}
+          <div className="ml-auto text-right shrink-0 text-sm">
+            <span className={`font-semibold tabular-nums ${isFree ? 'text-emerald-700' : 'text-slate-900'}`}>
+              {isFree ? 'FREE' : `${fmtCreditsLabel(perPeriodCredits)} per ${PERIOD_WORD[effectivePeriod]}`}
             </span>
-            <span className="text-[10px] text-slate-500 tabular-nums ml-1.5">{fmtUSD(perPeriodCost)} &middot; Cr/{PERIOD_WORD[effectivePeriod]}</span>
+            <span className="text-slate-400"> | </span>
+            <span className="text-slate-500 tabular-nums">{fmtUSD(perPeriodCost)}</span>
           </div>
         </div>
       </div>
 
       {item.supportsInitial ? (
         <div className={`mt-2 rounded-lg bg-${theme.color}-50 border border-${theme.color}-100 p-2`}>
-          <div className="flex items-center gap-2 flex-wrap">
-            <label className="text-[11px] font-semibold text-slate-800 shrink-0">{item.initialLabel} (Day 0, one-time)</label>
-            <div className="w-60 shrink-0">
+          <label className="block text-[11px] font-semibold text-slate-800 mb-1">{item.initialLabel} (Day 0, one-time)</label>
+          <div className="flex items-center gap-2">
+            <div className="flex-1 min-w-0 max-w-[15rem]">
               <NumberSpinner value={initial} onChange={onInitialChange} ariaLabel={`${item.label} \u2014 ${item.initialLabel}`} suffix={item.unitLabel} />
             </div>
-            <div className="ml-auto text-right shrink-0">
-              <span className={`text-sm font-semibold tabular-nums ${isFree ? 'text-emerald-700' : 'text-slate-900'}`}>
+            <div className="ml-auto text-right shrink-0 text-sm">
+              <span className={`font-semibold tabular-nums ${isFree ? 'text-emerald-700' : 'text-slate-900'}`}>
                 {isFree ? 'FREE' : fmtCreditsLabel(result.initialCredits)}
               </span>
-              <span className="text-[10px] text-slate-500 tabular-nums ml-1.5">{fmtUSD(result.initialCostUSD)}</span>
+              <span className="text-slate-400"> | </span>
+              <span className="text-slate-500 tabular-nums">{fmtUSD(result.initialCostUSD)}</span>
             </div>
           </div>
           <p className="mt-1 text-[10px] italic text-slate-500 leading-snug">

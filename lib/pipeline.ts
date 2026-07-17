@@ -1,6 +1,6 @@
 import type { Environment, RatesConfig } from './types';
 import type { RefreshMode, RunFrequency } from './refreshModes';
-import { MODE_SHORT_LABELS, runsPerYearFor } from './refreshModes';
+import { REFRESH_MODE_META, runsPerYearFor } from './refreshModes';
 
 export const PIPELINE_DRIVEN_ITEM_KEYS = {
   batch: 'externalDataPipelineBatch',
@@ -38,7 +38,7 @@ export function newPipeline(connectionKey: string, section: 'batch' | 'streaming
 // change, until the user renames it (nameIsCustom), which pins the name in place.
 export function autoPipelineName(p: Pipeline, connectionLabel: string): string {
   const object = p.object.trim() || 'All Objects';
-  const modeLabel = p.runMode === 'streaming' ? 'Streaming' : MODE_SHORT_LABELS[p.runMode];
+  const modeLabel = REFRESH_MODE_META[p.runMode].label;
   return `${connectionLabel} → ${object} (${modeLabel})`;
 }
 

@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import type { Environment, RatesConfig } from '@/lib/types';
 import { fmtCredits, fmtCreditsLabel, fmtUSD } from '@/lib/formatters';
-import { pipelineBreakdown, pipelineDisplayName, type Pipeline } from '@/lib/pipeline';
+import { autoPipelineName, pipelineBreakdown, pipelineDisplayName, type Pipeline } from '@/lib/pipeline';
 import {
   connectionsFor, findConnection, getPhaseRefreshConfig, PIPELINE_TYPE_DOCS,
   REFRESH_MODE_META, runsPerYearFor, RUN_FREQUENCY_META, type PipelineType, type RefreshMode, type RunFrequency
@@ -32,25 +32,35 @@ export default function PipelineSection({ type, title, pipelines, rates, environ
   const connections = connectionsFor(type);
   const [pendingConnection, setPendingConnection] = useState(connections[0].key);
   const sectionPipelines = pipelines.filter((p) => (p.runMode === 'streaming') === (type === 'streaming'));
-  const subtotalCredits = sectionPipelines.reduce((sum, p) => sum + pipelineBreakdown(p, rates, environment, overheadPct).annualCredits, 0);
+  const subtotals = sectionPipelines.reduce((acc, p) => {
+    const bd = pipelineBreakdown(p, rates, environment, overheadPct);
+    return { credits: acc.credits + bd.annualCredits, cost: acc.cost + bd.annualCostUSD };
+  }, { credits: 0, cost: 0 });
   const accent = type === 'batch' ? 'sky' : 'rose';
 
   return (
     <div className={`card p-3 border-t-4 border-t-${accent}-500`}>
-      <div className="flex items-center justify-between flex-wrap gap-2">
-        <div className="flex items-center gap-1.5">
-          <h3 className="text-sm font-semibold text-slate-900">{title}</h3>
-          <InfoTooltip
-            description={type === 'batch'
-              ? 'Full or Incremental Refresh pipelines that run on a schedule. Rolls up into the "(External) Data Pipeline - Batch" credit line.'
-              : 'Continuous, always-on pipelines (Web/Mobile SDK, Kafka, Ingestion API Streaming). Rolls up into the "(External) Data Pipeline - Streaming" credit line.'}
-            docs={PIPELINE_TYPE_DOCS[type]}
-          />
-        </div>
-        {sectionPipelines.length > 0 ? (
-          <span className="chip bg-slate-100 text-slate-600">{sectionPipelines.length} pipeline{sectionPipelines.length === 1 ? '' : 's'} · {fmtCredits(subtotalCredits)} credits/yr</span>
-        ) : null}
+      <div className="flex items-center gap-1.5 flex-wrap">
+        <h3 className="text-sm font-semibold text-slate-900">{title}</h3>
+        <InfoTooltip
+          description={type === 'batch'
+            ? 'Full or Incremental Refresh pipelines that run on a schedule. Rolls up into the "(External) Data Pipeline - Batch" credit line.'
+            : 'Continuous, always-on pipelines (Web/Mobile SDK, Kafka, Ingestion API Streaming). Rolls up into the "(External) Data Pipeline - Streaming" credit line.'}
+          docs={PIPELINE_TYPE_DOCS[type]}
+        />
       </div>
+
+      {sectionPipelines.length > 0 ? (
+        <div className={`mt-2 rounded-lg border border-${accent}-200 bg-${accent}-50 p-2 flex items-center justify-between`}>
+          <span className={`text-[10px] uppercase tracking-wide text-${accent}-700 font-bold`}>
+            {sectionPipelines.length} Pipeline{sectionPipelines.length === 1 ? '' : 's'} · Annual Credits
+          </span>
+          <div className="text-right">
+            <div className="text-sm font-semibold tabular-nums text-slate-900">{fmtCreditsLabel(subtotals.credits)}</div>
+            <div className="text-[10px] text-slate-500 tabular-nums">{fmtUSD(subtotals.cost)}</div>
+          </div>
+        </div>
+      ) : null}
 
       <div className="mt-3 flex items-center gap-2 flex-wrap">
         <select value={pendingConnection} onChange={(e) => setPendingConnection(e.target.value)}
@@ -203,7 +213,11 @@ function EditablePipelineName({ pipeline, connLabel, onUpdate }: { pipeline: Pip
   }
   function commit() {
     const trimmed = draft.trim();
-    onUpdate(pipeline.id, trimmed ? { name: trimmed, nameIsCustom: true } : { name: '', nameIsCustom: false });
+    // Only pin the name as custom if the user actually typed something different from what
+    // auto-generation would produce right now - otherwise clicking in and out (with no edit)
+    // would freeze a stale name that stops updating when Connection/Object/Mode change later.
+    const auto = autoPipelineName(pipeline, connLabel);
+    onUpdate(pipeline.id, !trimmed || trimmed === auto ? { name: '', nameIsCustom: false } : { name: trimmed, nameIsCustom: true });
     setEditing(false);
   }
 
