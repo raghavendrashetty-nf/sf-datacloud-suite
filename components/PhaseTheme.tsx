@@ -18,7 +18,9 @@ export const PHASES: PhaseTheme[] = [
 ];
 
 const FALLBACK: PhaseTheme = { key: '__custom__', order: 99, label: 'Custom Phase', color: 'slate', hex: '#64748b' };
+const GENERAL: PhaseTheme = { key: '__general__', order: 98, label: 'General / Cross-Phase', color: 'slate', hex: '#64748b' };
 
 export function getPhaseTheme(key: PhaseKey): PhaseTheme {
+  if (key === '__general__') return GENERAL;
   return PHASES.find((p) => p.key === key) ?? { ...FALLBACK, key, label: key || FALLBACK.label };
 }

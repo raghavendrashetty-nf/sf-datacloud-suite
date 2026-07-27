@@ -1,0 +1,143 @@
+{
+  "meta": { "version": "1.0" },
+  "skills": [
+    {
+      "id": "skill_streaming_ingestion",
+      "name": "Streaming Ingestion via Ingestion API",
+      "phase": "ingestion",
+      "summary": "Use event/streaming ingestion for sources that need near-real-time visibility in Data Cloud.",
+      "whenToUse": "SOW mentions: real-time, near-real-time, event stream, Kafka, webhook, IoT, click-stream, or a requirement for data to be visible in Data Cloud within seconds/minutes of being generated at the source.",
+      "bestPractices": "Recommend the Streaming Ingestion API (or Kafka/webhook connector) instead of a scheduled batch data stream when the customer's stated latency requirement is under an hour. Streaming data streams have no fixed run schedule and are billed on rows processed, not run count - call this out explicitly when estimating cost. Confirm the source system can actually emit events (vs. only supporting periodic exports) before recommending this path.",
+      "relatedRateItemKeys": ["externalDataPipelineStreaming"],
+      "docs": [
+        { "label": "Data Stream Settings and Refresh Modes", "url": "https://help.salesforce.com/s/articleView?id=sf.c360_a_data_stream_edit_settings.htm&language=en_US&type=5" }
+      ],
+      "createdAt": "2026-01-01T00:00:00.000Z",
+      "updatedAt": "2026-01-01T00:00:00.000Z"
+    },
+    {
+      "id": "skill_zero_copy_federation",
+      "name": "Zero Copy / Data Federation for External Warehouses",
+      "phase": "ingestion",
+      "summary": "Query data in place in an external warehouse (Snowflake, Databricks, BigQuery, Redshift) instead of copying it into Data Cloud.",
+      "whenToUse": "SOW mentions: Snowflake, Databricks, BigQuery, Redshift, data warehouse, data lake, Zero Copy, minimize data duplication/storage, or a requirement to avoid moving sensitive data out of an existing platform.",
+      "bestPractices": "When the customer already has a mature warehouse and the primary need is querying (not full Data Cloud harmonization/unification of that data), recommend Data Federation over a full ingestion pipeline. This avoids duplicate storage cost and keeps the warehouse as source of truth. Cost is driven by rows accessed per query, not a one-time load - flag this as a usage-pattern-dependent cost in the estimate rather than a fixed number.",
+      "relatedRateItemKeys": ["dataFederationRowsAccessed"],
+      "docs": [],
+      "createdAt": "2026-01-01T00:00:00.000Z",
+      "updatedAt": "2026-01-01T00:00:00.000Z"
+    },
+    {
+      "id": "skill_einstein_prediction_builder",
+      "name": "Einstein Prediction Builder for Propensity Scoring",
+      "phase": "insights",
+      "summary": "Use a Data Cloud-native prediction model for propensity/likelihood-to-X use cases instead of a bespoke external ML pipeline.",
+      "whenToUse": "SOW mentions: propensity to buy/churn/convert, likelihood score, lead scoring, next-best-action, or a request for predictive scoring on unified profile data already inside Data Cloud.",
+      "bestPractices": "Prefer a native Data Cloud prediction (Einstein Prediction Builder / Einstein Studio) when the required inputs are already unified profile/engagement data - it avoids building and maintaining a separate export-train-import ML loop. Cost scales with inferences generated, which is typically driven by segment/population size times refresh frequency - size the estimate off the target population, not the whole DMO.",
+      "relatedRateItemKeys": ["inferences"],
+      "docs": [],
+      "createdAt": "2026-01-01T00:00:00.000Z",
+      "updatedAt": "2026-01-01T00:00:00.000Z"
+    },
+    {
+      "id": "skill_calculated_insights_scheduling",
+      "name": "Calculated Insights Scheduling for Aggregated Metrics",
+      "phase": "insights",
+      "summary": "Model recurring aggregate metrics (lifetime value, RFM, rolling counts) as scheduled Calculated Insights rather than recomputing on every query.",
+      "whenToUse": "SOW mentions: lifetime value, RFM, aggregated metric, rolling window, dashboard metric, or a recurring reporting/segmentation need built on aggregated history.",
+      "bestPractices": "Match the Calculated Insight's refresh schedule to how often the metric is actually consumed downstream (e.g. daily for a nightly segmentation job) rather than defaulting to the fastest available cadence - over-scheduling inflates credit consumption with no business benefit. Cite the specific downstream consumer (a segment, a dashboard, an activation) driving the required freshness.",
+      "relatedRateItemKeys": ["calculatedInsightsBatch"],
+      "docs": [
+        { "label": "Schedule a Calculated Insight in Data 360", "url": "https://help.salesforce.com/s/articleView?id=sf.c360_a_schedule_a_calculated_insight_in_data_cloud.htm&language=en_US&type=5" }
+      ],
+      "createdAt": "2026-01-01T00:00:00.000Z",
+      "updatedAt": "2026-01-01T00:00:00.000Z"
+    },
+    {
+      "id": "skill_segment_rapid_publish",
+      "name": "Segment Rapid Publish for Near-Real-Time Personalization",
+      "phase": "activation",
+      "summary": "Use Rapid Publish (1-4 hour cadence) for activation targets that need fresher segment membership than the standard 12/24 hour publish.",
+      "whenToUse": "SOW mentions: real-time personalization, same-day activation, abandoned cart within hours, or an explicit requirement that segment membership changes reach the activation target faster than once a day.",
+      "bestPractices": "Only recommend Rapid Publish when the customer has a concrete latency requirement under 12 hours and the activation target supports it (Marketing Cloud Engagement) - it filters to the last 7 days of engagement data, which is a real constraint to flag, not just a cost driver. Standard Publish is almost always sufficient and cheaper for batch-oriented campaigns.",
+      "relatedRateItemKeys": ["segmentRowsProcessed"],
+      "docs": [
+        { "label": "Increase Segment Refresh from Data 360 to the Activation Targets (Rapid Publish)", "url": "https://help.salesforce.com/s/articleView?id=sf.c360_a_rapid_segment_publish.htm&language=en_US&type=5" }
+      ],
+      "createdAt": "2026-01-01T00:00:00.000Z",
+      "updatedAt": "2026-01-01T00:00:00.000Z"
+    },
+    {
+      "id": "skill_realtime_query_api",
+      "name": "Real-Time Query API for Personalization Endpoints",
+      "phase": "act",
+      "summary": "Use the Data Cloud real-time/data query API to serve sub-second lookups directly to a web/mobile personalization endpoint.",
+      "whenToUse": "SOW mentions: website personalization, sub-second, real-time lookup, API call at runtime, or a requirement to read unified profile/segment data from a customer-facing app at the moment of interaction.",
+      "bestPractices": "Recommend this path only when the consumer is a live customer-facing surface (web/mobile/API) needing per-request reads - for internal reporting or batch exports, a scheduled export or Calculated Insight is cheaper and simpler. Cost is driven by query/lookup volume at the traffic pattern's peak, not average - size the estimate off expected peak concurrent sessions.",
+      "relatedRateItemKeys": ["dataQueries", "streamingActionsLookups"],
+      "docs": [],
+      "createdAt": "2026-01-01T00:00:00.000Z",
+      "updatedAt": "2026-01-01T00:00:00.000Z"
+    },
+    {
+      "id": "skill_predictive_asset_scoring",
+      "name": "Predictive Scoring for Asset Health / Failure Risk",
+      "phase": "insights",
+      "summary": "Use Data Cloud predictions on unified asset + maintenance-history profiles to score failure risk or remaining useful life, instead of a standalone external ML pipeline.",
+      "whenToUse": "SOW mentions: predictive maintenance, failure risk, remaining useful life, asset health score, parts replacement prediction, or any request to forecast when equipment/parts will need service based on historical usage/maintenance data.",
+      "bestPractices": "This only works well once maintenance history, usage/telemetry, and asset records are unified into a single profile - call out identity resolution/profile unification as a prerequisite, not an afterthought. Prefer a native Data Cloud prediction over an external ML pipeline only when the required historical signals are already inside (or easily ingested into) Data Cloud; if the real modeling complexity lives in specialized reliability-engineering models, flag that native prediction may not be sufficient and a hybrid approach (external model, Data Cloud for delivery/activation of the score) may be more honest. Cost scales with inferences generated against the target asset population, not the full fleet if only a subset is in scope.",
+      "relatedRateItemKeys": ["inferences", "profileUnification"],
+      "docs": [],
+      "createdAt": "2026-01-01T00:00:00.000Z",
+      "updatedAt": "2026-01-01T00:00:00.000Z"
+    },
+    {
+      "id": "skill_identity_resolution_profile_unification",
+      "name": "Unified Profile via Identity Resolution",
+      "phase": "ingestion",
+      "summary": "Match and merge records across multiple source systems (CRM, ERP, service, IoT/telemetry) into one unified profile before any downstream insight or activation work.",
+      "whenToUse": "SOW mentions: multiple source systems for the same entity (customer, asset, equipment), a 360-degree/unified view, duplicate records across systems, or any insight/prediction/activation use case that depends on data joined across more than one system.",
+      "bestPractices": "Treat this as the foundational step for almost every other skill in this library - a prediction, calculated insight, or activation built on unmerged, duplicated records will be unreliable regardless of how good the downstream model is. Scope the match rules to the specific identifying fields the SOW's source systems actually share (e.g. serial number, account ID, email) rather than assuming a generic match rule will work. Cost is driven by unified profile volume, not raw source-row volume.",
+      "relatedRateItemKeys": ["profileUnification"],
+      "docs": [],
+      "createdAt": "2026-01-01T00:00:00.000Z",
+      "updatedAt": "2026-01-01T00:00:00.000Z"
+    },
+    {
+      "id": "skill_unstructured_document_processing",
+      "name": "Unstructured Document Processing for Service/Case Data",
+      "phase": "ingestion",
+      "summary": "Extract structured signal (entities, categories, sentiment) from unstructured text - case notes, service logs, manuals, transcripts - via Intelligent Processing before it can feed insights or an agent.",
+      "whenToUse": "SOW mentions: case notes, service tickets, technician logs, manuals/documentation, call transcripts, Agentforce grounding on unstructured content, or any requirement to make free-text data queryable/usable by a prediction or an agent.",
+      "bestPractices": "Recommend this only when the SOW's downstream use case (a prediction, a segment, an Agentforce topic/action) actually needs the extracted structured fields - don't recommend blanket document ingestion without a named consumer. Cost is driven by volume of unstructured content processed, which is usually much smaller than the raw document count once you scope to the fields actually needed downstream.",
+      "relatedRateItemKeys": ["unstructuredDataProcessed", "intelligentProcessing"],
+      "docs": [],
+      "createdAt": "2026-01-01T00:00:00.000Z",
+      "updatedAt": "2026-01-01T00:00:00.000Z"
+    },
+    {
+      "id": "skill_data_transforms_custom_aggregation",
+      "name": "Data Transforms for Custom Aggregations Feeding a Model",
+      "phase": "ingestion",
+      "summary": "Use scheduled Data Transforms to pre-aggregate or reshape ingested data (e.g. rolling usage windows, derived features) before it feeds a Calculated Insight or a prediction.",
+      "whenToUse": "SOW mentions: derived/calculated fields not present at source, feature engineering for a model, combining fields across objects before analysis, or a data-shape mismatch between what's ingested and what a downstream insight/prediction needs.",
+      "bestPractices": "Reach for a Data Transform when the reshaping logic needs to run once and be reused by multiple downstream consumers (a prediction and a dashboard, for example) rather than duplicating the same SQL-like logic in every Calculated Insight. Match the transform's schedule to the least-frequent downstream consumer, the same way as Calculated Insight scheduling - don't default to the fastest cadence available.",
+      "relatedRateItemKeys": ["dataTransformsBatch"],
+      "docs": [],
+      "createdAt": "2026-01-01T00:00:00.000Z",
+      "updatedAt": "2026-01-01T00:00:00.000Z"
+    },
+    {
+      "id": "skill_sow_technical_review_framework",
+      "name": "SOW Technical Review Framework for Data Cloud Scope",
+      "phase": "__general__",
+      "summary": "A pre-signature risk/feasibility checklist for any Data Cloud SOW - apply alongside whichever other skills match.",
+      "whenToUse": "Always apply this whenever the SOW/scope document references Data Cloud, Zero Copy, Data Streams, Data Spaces, Calculated Insights, Identity Resolution, Einstein Prediction Builder, Agentforce, or Salesforce-to-external-source integration - regardless of which other skills also match. This is a review framework, not a single narrow trigger.",
+      "bestPractices": "Flag these recurring risk areas when present in the SOW, each with a concrete recommendation rather than just an observation: (1) Zero Copy - does it require a specific source-platform edition/federation setup not confirmed in the assumptions, and is there a stated ingestion fallback if prerequisites aren't met? (2) Data Streams/ingestion - does the number of business objects/entities match the stated number of streams/instances (one source can feed many objects = many streams - flag if the SOW's language conflates them), and are refresh cadence/freshness SLAs specified? (3) Data Spaces - is the design right-sized for current scope while still extensible for future phases? (4) Predictive models (Prediction Builder/similar) - is there a stated minimum historical data volume for reliable training, does the model need data on an object type different from where it lands via ingestion (an implied sync step that may be unscoped), and are thresholds/outputs static vs dynamic in a way that should be surfaced to the customer? (5) Agentforce/agent integration - treat this as the highest technical risk regardless of how briefly it's scoped; a one-line bullet covering grounding + actions/topics + write-back usually understates its complexity - flag it for a named integration owner. (6) Assumptions section - scan for blank/incomplete/dropped numbered items and unrealistic data-access/timeline assumptions. (7) Commercial math - reconcile whether per-workstream hours and fees actually sum to the stated total (before and after any discount), and whether billing terms match. Track every stated numeric cap (\"up to N objects\", \"up to 1 instance\") precisely - these are where scope disputes originate later. Stay evenhanded about vendor design choices (e.g. single vs. multiple Data Spaces) - frame as a trade-off rather than declaring it wrong, unless it conflicts with a stated platform constraint.",
+      "relatedRateItemKeys": ["profileUnification", "inferences", "externalDataPipelineBatch", "externalDataPipelineStreaming", "dataFederationRowsAccessed"],
+      "docs": [],
+      "createdAt": "2026-01-01T00:00:00.000Z",
+      "updatedAt": "2026-01-01T00:00:00.000Z"
+    }
+  ]
+}

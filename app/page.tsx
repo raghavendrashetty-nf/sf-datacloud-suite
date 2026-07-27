@@ -141,9 +141,9 @@ export default function LandingPage() {
 
           <StageConnector />
 
-          <StageHeader number={2} name="Solution Design" status="planned" />
+          <StageHeader number={2} name="Solution Design" status="live" />
           <div className="grid grid-cols-1 md:grid-cols-3 gap-5 md:pl-[3rem]">
-            <RoadmapToolCard
+            <LiveToolCard
               href="/solution-recommender"
               gradient="from-violet-500 to-fuchsia-500"
               icon={(
@@ -152,8 +152,9 @@ export default function LandingPage() {
                 </svg>
               )}
               title="AI Solution Recommender"
-              status="planned"
-              description="SOW / Discovery Doc → prompt → Data 360 Skills → design recommendation with SWOT &amp; cost analysis."
+              badge="New" badgeClass="bg-violet-100 text-violet-700"
+              description="SOW / Discovery Doc + Data 360 Skills → design recommendation with SWOT &amp; cost analysis, via Claude or a local free LLM."
+              cta="Open Recommender"
             />
           </div>
 

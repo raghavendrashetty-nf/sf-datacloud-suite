@@ -34,3 +34,20 @@ export interface CalculationResult {
   };
   perPhase: PhaseTotal[];
 }
+
+export interface Skill {
+  id: string;
+  name: string;
+  phase: PhaseKey | '__general__';
+  summary: string;
+  whenToUse: string;
+  bestPractices: string;
+  relatedRateItemKeys: string[];
+  docs: { label: string; url: string }[];
+  createdAt: string;
+  updatedAt: string;
+}
+export interface SkillsConfig {
+  meta: { version: string };
+  skills: Skill[];
+}
