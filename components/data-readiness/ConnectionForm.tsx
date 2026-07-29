@@ -6,51 +6,109 @@ import type { ConnectionInfo, SFConnectionConfig } from '@/lib/dataReadiness';
 interface Props { onConnected?: (info: ConnectionInfo) => void; }
 type DomainChoice = 'login' | 'test' | 'custom';
 
+const REMEMBER_KEY = 'sfdc.salesforceConnection.remember.v1';
+
+interface RememberedCreds {
+  username: string; password: string; securityToken: string;
+  domainChoice: DomainChoice; instanceUrl: string; customDomain: string;
+}
+
+function readRemembered(): RememberedCreds | null {
+  try {
+    if (typeof window === 'undefined') return null;
+    const raw = window.localStorage.getItem(REMEMBER_KEY);
+    return raw ? JSON.parse(raw) : null;
+  } catch { return null; }
+}
+function saveRemembered(creds: RememberedCreds) {
+  try { window.localStorage.setItem(REMEMBER_KEY, JSON.stringify(creds)); } catch {}
+}
+function clearRemembered() {
+  try { window.localStorage.removeItem(REMEMBER_KEY); } catch {}
+}
+
 export default function ConnectionForm({ onConnected }: Props) {
   const [info, setInfo] = useState<ConnectionInfo>({ connected: false });
   const [loadingStatus, setLoadingStatus] = useState(true);
+  const [autoReconnecting, setAutoReconnecting] = useState(false);
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [securityToken, setSecurityToken] = useState('');
   const [domainChoice, setDomainChoice] = useState<DomainChoice>('login');
   const [instanceUrl, setInstanceUrl] = useState('');
   const [customDomain, setCustomDomain] = useState('');
+  const [remember, setRemember] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showToken, setShowToken] = useState(false);
   const [connecting, setConnecting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    fetch('/api/data-readiness/connection').then((r) => r.json()).then((j) => { if (j?.info) setInfo(j.info); }).catch(() => {}).finally(() => setLoadingStatus(false));
-  }, []);
-
-  async function submit(e: React.FormEvent) {
-    e.preventDefault();
-    setError(null); setConnecting(true);
+  async function connectWithConfig(config: SFConnectionConfig, rememberThis: boolean): Promise<boolean> {
+    setError(null);
     try {
-      const domain = domainChoice === 'custom' ? (customDomain || instanceUrl) : domainChoice;
-      const config: SFConnectionConfig = { username: username.trim(), password, securityToken: securityToken || undefined, domain, instanceUrl: instanceUrl.trim() || undefined };
       const resp = await fetch('/api/data-readiness/connection', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(config) });
       const j = await resp.json();
       if (!resp.ok) throw new Error(j.error || `HTTP ${resp.status}`);
       setInfo(j.info); onConnected?.(j.info);
-    } catch (e: any) { setError(e?.message ?? 'Connection failed'); }
-    finally { setConnecting(false); }
+      if (rememberThis) {
+        saveRemembered({
+          username: config.username, password: config.password, securityToken: config.securityToken || '',
+          domainChoice, instanceUrl: config.instanceUrl || '', customDomain
+        });
+      } else {
+        clearRemembered();
+      }
+      return true;
+    } catch (e: any) {
+      setError(e?.message ?? 'Connection failed');
+      return false;
+    }
+  }
+
+  useEffect(() => {
+    fetch('/api/data-readiness/connection').then((r) => r.json()).then(async (j) => {
+      if (j?.info?.connected) { setInfo(j.info); return; }
+      const remembered = readRemembered();
+      if (remembered) {
+        setUsername(remembered.username); setSecurityToken(remembered.securityToken);
+        setDomainChoice(remembered.domainChoice); setInstanceUrl(remembered.instanceUrl); setCustomDomain(remembered.customDomain);
+        setRemember(true);
+        setAutoReconnecting(true);
+        const domain = remembered.domainChoice === 'custom' ? (remembered.customDomain || remembered.instanceUrl) : remembered.domainChoice;
+        const ok = await connectWithConfig(
+          { username: remembered.username, password: remembered.password, securityToken: remembered.securityToken || undefined, domain, instanceUrl: remembered.instanceUrl || undefined },
+          true
+        );
+        if (!ok) { clearRemembered(); setError('Saved credentials no longer work - please reconnect.'); }
+        setAutoReconnecting(false);
+      }
+    }).catch(() => {}).finally(() => setLoadingStatus(false));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  async function submit(e: React.FormEvent) {
+    e.preventDefault();
+    setConnecting(true);
+    try {
+      const domain = domainChoice === 'custom' ? (customDomain || instanceUrl) : domainChoice;
+      const config: SFConnectionConfig = { username: username.trim(), password, securityToken: securityToken || undefined, domain, instanceUrl: instanceUrl.trim() || undefined };
+      await connectWithConfig(config, remember);
+    } finally { setConnecting(false); }
   }
 
   async function disconnect() {
     setConnecting(true);
-    try { await fetch('/api/data-readiness/connection', { method: 'DELETE' }); setInfo({ connected: false }); }
+    try { await fetch('/api/data-readiness/connection', { method: 'DELETE' }); clearRemembered(); setInfo({ connected: false }); setRemember(false); }
     finally { setConnecting(false); }
   }
 
-  if (loadingStatus) {
+  if (loadingStatus || autoReconnecting) {
     return (
       <div className="card p-6 flex items-center gap-3 text-sm text-slate-500">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4 animate-spin">
           <path d="M21 12a9 9 0 11-6.219-8.56" strokeLinecap="round" />
         </svg>
-        Checking connection status...
+        {autoReconnecting ? 'Reconnecting with saved credentials...' : 'Checking connection status...'}
       </div>
     );
   }
@@ -69,6 +127,7 @@ export default function ConnectionForm({ onConnected }: Props) {
               <h3 className="text-base font-bold text-slate-900">Connected to Salesforce</h3>
               {info.isSandbox ? <span className="chip bg-amber-100 text-amber-800 font-semibold">SANDBOX</span>
                               : <span className="chip bg-emerald-100 text-emerald-800 font-semibold">PRODUCTION</span>}
+              {readRemembered() ? <span className="chip bg-slate-100 text-slate-600 font-semibold">Remembered on this device</span> : null}
             </div>
             <dl className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-1.5 text-xs">
               {info.displayName ? <div><dt className="inline text-slate-500">User: </dt><dd className="inline font-semibold text-slate-900">{info.displayName}</dd></div> : null}
@@ -78,7 +137,7 @@ export default function ConnectionForm({ onConnected }: Props) {
             </dl>
             <div className="mt-4 flex items-center gap-3">
               <button type="button" onClick={disconnect} disabled={connecting}
-                className="text-xs text-rose-600 hover:text-rose-800 underline disabled:opacity-60">Disconnect</button>
+                className="text-xs text-rose-600 hover:text-rose-800 underline disabled:opacity-60">Disconnect{readRemembered() ? ' & forget' : ''}</button>
               {onConnected ? (
                 <button type="button" onClick={() => onConnected(info)}
                   className="ml-auto inline-flex items-center gap-2 px-4 py-1.5 rounded-lg bg-gradient-to-br from-emerald-500 to-teal-500 text-white text-sm font-semibold shadow hover:shadow-md">
@@ -99,7 +158,7 @@ export default function ConnectionForm({ onConnected }: Props) {
     <form onSubmit={submit} className="card p-5 space-y-4">
       <div>
         <h3 className="text-base font-bold text-slate-900">Connect to Salesforce</h3>
-        <p className="text-xs text-slate-500 mt-1">Credentials are stored only in server memory and never persisted.</p>
+        <p className="text-xs text-slate-500 mt-1">Credentials are stored only in server memory and never persisted, unless you check &quot;Remember on this device&quot; below.</p>
       </div>
       <div>
         <label className="block text-xs font-semibold text-slate-700 mb-1 uppercase tracking-wide">Username</label>
@@ -162,6 +221,10 @@ export default function ConnectionForm({ onConnected }: Props) {
           placeholder="https://mydomain--full.sandbox.my.salesforce.com"
           className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm font-mono focus:border-emerald-400 focus:ring-2 focus:ring-emerald-200 outline-none" />
       </div>
+      <label className="flex items-start gap-2 text-xs text-slate-600">
+        <input type="checkbox" checked={remember} onChange={(e) => setRemember(e.target.checked)} className="mt-0.5" />
+        <span>Remember these credentials on this device (stored in this browser&apos;s local storage, so you won&apos;t need to re-enter them next time - only do this on a device you trust).</span>
+      </label>
       {error ? (
         <div className="rounded-lg border border-rose-200 bg-rose-50 p-3 text-xs text-rose-700">
           <div className="font-semibold mb-1">Connection failed</div>
