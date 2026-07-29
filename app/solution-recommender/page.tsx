@@ -113,7 +113,7 @@ export default function SolutionRecommenderPage() {
 
           <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
             <p className="text-[11px] text-slate-500">
-              Analyzed locally via Ollama (free) - requires Ollama running with a model pulled (e.g. <code className="text-[10px]">ollama pull llama3.2</code>).
+              Analyzed via Gemini (free tier) in production, or local Ollama in dev when no Gemini key is configured - requires Ollama running with a model pulled (e.g. <code className="text-[10px]">ollama pull llama3.2</code>).
             </p>
             <button onClick={analyze} disabled={!sowText.trim() || stage === 'analyzing'} className="btn-primary text-sm disabled:opacity-60">
               {stage === 'analyzing' ? 'Analyzing...' : 'Analyze'}

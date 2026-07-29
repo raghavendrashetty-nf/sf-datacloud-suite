@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { GoogleGenAI, ApiError } from '@google/genai';
 import type { Skill } from '@/lib/types';
 import { RECOMMENDATION_SCHEMA, buildSystemPrompt, buildUserPrompt, safeParseRecommendation } from '@/lib/llmProviders';
 
@@ -6,6 +7,40 @@ export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
 interface AnalyzeBody { sowText?: string; skills?: Skill[]; }
+
+async function analyzeWithGemini(sowText: string, skills: Skill[]) {
+  const apiKey = process.env.GEMINI_API_KEY!;
+  const model = process.env.GEMINI_MODEL ?? 'gemini-2.5-flash';
+  const ai = new GoogleGenAI({ apiKey });
+  try {
+    const response = await ai.models.generateContent({
+      model,
+      contents: buildUserPrompt(sowText, skills),
+      config: {
+        systemInstruction: buildSystemPrompt(),
+        responseMimeType: 'application/json',
+        responseJsonSchema: RECOMMENDATION_SCHEMA
+      }
+    });
+    if (!response.text) return NextResponse.json({ error: 'Gemini returned no text output.' }, { status: 502 });
+    const recommendation = safeParseRecommendation(response.text);
+    return NextResponse.json({ recommendation });
+  } catch (e) {
+    if (e instanceof ApiError) {
+      // Gemini returns 400 (not 401/403) for an invalid API key - match on the
+      // reason string rather than assuming a conventional auth status code.
+      if (e.status === 401 || e.status === 403 || /API_KEY_INVALID|API key not valid/i.test(e.message)) {
+        return NextResponse.json({ error: 'Gemini API key was rejected. Check GEMINI_API_KEY.' }, { status: 401 });
+      }
+      if (e.status === 429) {
+        return NextResponse.json({ error: 'Gemini free-tier rate limit reached. Try again shortly.' }, { status: 429 });
+      }
+      return NextResponse.json({ error: `Gemini API error: ${e.message}` }, { status: e.status || 502 });
+    }
+    const message2 = e instanceof Error ? e.message : 'Unknown error';
+    return NextResponse.json({ error: `Failed to analyze: ${message2}` }, { status: 500 });
+  }
+}
 
 async function analyzeWithOllama(sowText: string, skills: Skill[]) {
   const baseUrl = process.env.OLLAMA_BASE_URL ?? 'http://localhost:11434';
@@ -71,5 +106,8 @@ export async function POST(req: NextRequest) {
   if (!Array.isArray(skills)) {
     return NextResponse.json({ error: 'skills must be an array' }, { status: 400 });
   }
+  // Gemini's free tier works anywhere (incl. Railway, where localhost Ollama isn't reachable).
+  // Prefer it automatically when configured; otherwise fall back to local Ollama for dev.
+  if (process.env.GEMINI_API_KEY) return analyzeWithGemini(sowText, skills);
   return analyzeWithOllama(sowText, skills);
 }

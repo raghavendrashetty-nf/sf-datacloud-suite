@@ -73,6 +73,13 @@ function ensureConn(): any {
   return cache.conn;
 }
 
+// Exposes the live jsforce Connection to other server-side clients (e.g. dataCloudClient.ts)
+// that need the raw access token / instance URL or the ability to make arbitrary REST calls,
+// without duplicating the connection/session logic here.
+export function getActiveConnection(): any {
+  return ensureConn();
+}
+
 // ---------------- Metadata ----------------
 
 export interface SObjectListItem {
