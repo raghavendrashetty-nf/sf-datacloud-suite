@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import Header from '@/components/Header';
 import CollapsibleSection from '@/components/CollapsibleSection';
-import SkillManager from '@/components/skills/SkillManager';
+import SkillLibraryView from '@/components/skills/SkillLibraryView';
 import { getPhaseTheme } from '@/components/PhaseTheme';
 import { useSkills } from '@/hooks/useSkills';
 import { useRates } from '@/hooks/useRates';
@@ -13,9 +13,9 @@ import type { Recommendation } from '@/lib/llmProviders';
 type Stage = 'idle' | 'extracting' | 'analyzing' | 'done' | 'error';
 
 export default function SolutionRecommenderPage() {
-  const { skills, setSkills, resetSkills } = useSkills();
+  const { skills } = useSkills();
   const { rates } = useRates();
-  const [showSkillManager, setShowSkillManager] = useState(false);
+  const [showSkillLibrary, setShowSkillLibrary] = useState(false);
   const [sowText, setSowText] = useState('');
   const [stage, setStage] = useState<Stage>('idle');
   const [error, setError] = useState<string | null>(null);
@@ -80,7 +80,7 @@ export default function SolutionRecommenderPage() {
         <div className="card p-5 mb-6">
           <div className="flex items-center justify-between mb-3">
             <h2 className="text-sm font-bold text-slate-900">Data 360 Skills Library ({skills.skills.length})</h2>
-            <button onClick={() => setShowSkillManager(true)} className="btn-ghost text-sm py-1.5 px-3">Manage Skills</button>
+            <button onClick={() => setShowSkillLibrary(true)} className="btn-ghost text-sm py-1.5 px-3">View Skill Details</button>
           </div>
           <div className="flex flex-wrap gap-1.5">
             {skills.skills.map((s) => {
@@ -89,8 +89,14 @@ export default function SolutionRecommenderPage() {
                 <span key={s.id} className={`chip text-[11px] font-medium bg-${theme.color}-100 text-${theme.color}-700`}>{s.name}</span>
               );
             })}
-            {skills.skills.length === 0 ? <p className="text-xs text-slate-500">No skills yet - click "Manage Skills" to add some.</p> : null}
           </div>
+          {skills.meta.source ? (
+            <p className="text-[11px] text-slate-400 mt-2">
+              Sourced from <a href={skills.meta.source} target="_blank" rel="noreferrer" className="underline">forcedotcom/sf-skills</a>
+              {skills.meta.sourceCommit ? <> @ <code className="text-[10px]">{skills.meta.sourceCommit.slice(0, 10)}</code></> : null}
+              {skills.meta.syncedAt ? <> &middot; synced {new Date(skills.meta.syncedAt).toLocaleDateString()}</> : null} - not editable in this app.
+            </p>
+          ) : null}
         </div>
 
         <div className="card p-5 mb-6">
@@ -192,13 +198,11 @@ export default function SolutionRecommenderPage() {
         ) : null}
       </div>
 
-      {showSkillManager ? (
-        <SkillManager
+      {showSkillLibrary ? (
+        <SkillLibraryView
           skills={skills}
           rateItems={rates.items}
-          onSave={setSkills}
-          onReset={resetSkills}
-          onClose={() => setShowSkillManager(false)}
+          onClose={() => setShowSkillLibrary(false)}
         />
       ) : null}
 

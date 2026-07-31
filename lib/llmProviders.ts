@@ -81,16 +81,21 @@ export function buildSystemPrompt(): string {
   ].join('\n');
 }
 
-export function buildUserPrompt(sowText: string, skills: Skill[]): string {
-  const truncated = sowText.length > SOW_TEXT_MAX_CHARS;
-  const clippedText = truncated ? sowText.slice(0, SOW_TEXT_MAX_CHARS) : sowText;
+// Shared with lib/orgReview.ts so both prompts describe the skill library identically.
+export function formatSkillsBlock(skills: Skill[]): string {
   const skillsBlock = skills.map((s) => (
     `- id: ${s.id}\n  name: ${s.name}\n  phase: ${s.phase}\n  summary: ${s.summary}\n  whenToUse: ${s.whenToUse}\n  bestPractices: ${s.bestPractices}\n  relatedRateItemKeys: ${s.relatedRateItemKeys.join(', ') || '(none)'}`
   )).join('\n\n');
+  return skillsBlock || '(no skills defined)';
+}
+
+export function buildUserPrompt(sowText: string, skills: Skill[]): string {
+  const truncated = sowText.length > SOW_TEXT_MAX_CHARS;
+  const clippedText = truncated ? sowText.slice(0, SOW_TEXT_MAX_CHARS) : sowText;
 
   return [
     '## Data 360 Skills Library',
-    skillsBlock || '(no skills defined)',
+    formatSkillsBlock(skills),
     '',
     '## Statement of Work / Discovery Document',
     truncated ? `[Note: SOW text truncated to the first ${SOW_TEXT_MAX_CHARS.toLocaleString()} characters]` : '',
