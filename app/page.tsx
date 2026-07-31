@@ -160,9 +160,9 @@ export default function LandingPage() {
 
           <StageConnector />
 
-          <StageHeader number={3} name="Implementation Review" status="planned" />
+          <StageHeader number={3} name="Implementation Review" status="live" />
           <div className="grid grid-cols-1 md:grid-cols-3 gap-5 md:pl-[3rem]">
-            <RoadmapToolCard
+            <LiveToolCard
               href="/org-scanner"
               gradient="from-teal-500 to-cyan-500"
               icon={(
@@ -171,8 +171,9 @@ export default function LandingPage() {
                 </svg>
               )}
               title="AI Org Scanner"
-              status="planned"
-              description="Connects to a live Data 360 instance, scans existing configuration, and reviews it against a chosen solution - with justified recommendations."
+              badge="New" badgeClass="bg-teal-100 text-teal-700"
+              description="Connects to a live Data 360 instance, scans existing configuration, estimates credit consumption, and reviews it against best practices or a SOW - with justified recommendations."
+              cta="Open Scanner"
             />
           </div>
 

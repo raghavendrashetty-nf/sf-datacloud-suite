@@ -14,11 +14,16 @@ declare global {
     config: SFConnectionConfig | null;
     objectListCache: { at: number; items: SObjectListItem[] } | null;
     fieldsCache: Record<string, { at: number; fields: SFieldListItem[] }>;
+    // Deployment needs two simultaneous live sessions (source org to retrieve from, target org
+    // to deploy to) - kept as a fully separate slot so connecting a target org never disturbs
+    // the primary connection used by Data Readiness/Org Scanner/Solution Recommender.
+    targetConn: any | null;
+    targetInfo: ConnectionInfo | null;
   } | undefined;
 }
 
 if (!globalThis.__sfCache) {
-  globalThis.__sfCache = { conn: null, info: null, config: null, objectListCache: null, fieldsCache: {} };
+  globalThis.__sfCache = { conn: null, info: null, config: null, objectListCache: null, fieldsCache: {}, targetConn: null, targetInfo: null };
 }
 const cache = globalThis.__sfCache!;
 
@@ -78,6 +83,48 @@ function ensureConn(): any {
 // without duplicating the connection/session logic here.
 export function getActiveConnection(): any {
   return ensureConn();
+}
+
+// ---------------- Target org connection (deployment only) ----------------
+
+export async function setTargetConnection(config: SFConnectionConfig): Promise<ConnectionInfo> {
+  const jsforce: any = await import('jsforce');
+  const Connection = jsforce.Connection ?? jsforce.default?.Connection;
+  const conn = new Connection({ loginUrl: domainToLoginUrl(config.domain), instanceUrl: config.instanceUrl, version: '59.0' });
+  const password = (config.password || '') + (config.securityToken || '');
+  const userInfo = await conn.login(config.username, password);
+
+  let organizationName = '', isSandbox = false;
+  try {
+    const org = await conn.query('SELECT Id, Name, IsSandbox FROM Organization LIMIT 1');
+    if (org.records?.[0]) { organizationName = org.records[0].Name || ''; isSandbox = !!org.records[0].IsSandbox; }
+  } catch {}
+  let displayName = '';
+  try {
+    const u = await conn.query(`SELECT Name FROM User WHERE Id = '${userInfo.id}' LIMIT 1`);
+    if (u.records?.[0]) displayName = u.records[0].Name || '';
+  } catch {}
+
+  const info: ConnectionInfo = {
+    connected: true, username: config.username, displayName,
+    organizationId: userInfo.organizationId, organizationName,
+    instanceUrl: conn.instanceUrl, isSandbox, apiVersion: conn.version,
+    connectedAt: new Date().toISOString()
+  };
+  cache.targetConn = conn; cache.targetInfo = info;
+  return info;
+}
+
+export function getTargetConnectionInfo(): ConnectionInfo {
+  if (cache.targetConn && cache.targetInfo) return cache.targetInfo;
+  return { connected: false };
+}
+export function clearTargetConnection() {
+  cache.targetConn = null; cache.targetInfo = null;
+}
+export function getActiveTargetConnection(): any {
+  if (!cache.targetConn) throw new Error('Not connected to a target org. Connect a target org before deploying.');
+  return cache.targetConn;
 }
 
 // ---------------- Metadata ----------------

@@ -46,8 +46,11 @@ export interface Skill {
   docs: { label: string; url: string }[];
   createdAt: string;
   updatedAt: string;
+  /** sha256 of the source SKILL.md content, set by scripts/sync-skills.js */
+  sourceHash?: string;
+  sourceCheckedAt?: string;
 }
 export interface SkillsConfig {
-  meta: { version: string };
+  meta: { version: string; source?: string; sourceCommit?: string; syncedAt?: string };
   skills: Skill[];
 }

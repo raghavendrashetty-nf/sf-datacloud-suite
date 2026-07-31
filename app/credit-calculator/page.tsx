@@ -24,7 +24,10 @@ function ChevronDown({ className = 'w-4 h-4' }: { className?: string }) {
 
 export default function CreditCalculatorPage() {
   const { rates, setRates, resetRates } = useRates();
-  const { inputs, result, setEnvironment, setCost, setOverhead, setItemVolume, setItemInitial, setItemPeriod, reset } = useCalculator(rates);
+  const {
+    inputs, result, setEnvironment, setCost, setOverhead, setItemVolume, setItemInitial, setItemPeriod, reset,
+    justPrefilled, dismissPrefillBanner
+  } = useCalculator(rates);
   const [rateManagerOpen, setRateManagerOpen] = useState(false);
   const chartsRef = useRef<HTMLDivElement>(null);
 
@@ -65,6 +68,13 @@ export default function CreditCalculatorPage() {
     setExpandedPhases(next);
   }
 
+  // A prefill from Org Scanner targets an ingestion-phase item - auto-expand that phase so it's
+  // actually visible on arrival instead of hidden behind the collapsed-by-default phase card.
+  useEffect(() => {
+    if (!justPrefilled) return;
+    setExpandedPhases((prev) => ({ ...prev, ingestion: true }));
+  }, [justPrefilled]);
+
   return (
     <main className="min-h-screen">
       <Header />
@@ -82,6 +92,12 @@ export default function CreditCalculatorPage() {
             {' · '}Need Refresh Mode &amp; Pipeline-level modeling?{' '}
             <Link href="/credit-calculator/advanced" className="underline text-indigo-600 hover:text-indigo-800">Try the Advanced Calculator</Link>
           </p>
+          {justPrefilled ? (
+            <div className="mt-3 flex items-start justify-between gap-3 rounded-lg border border-teal-200 bg-teal-50 px-3 py-2 text-xs text-teal-800">
+              <p>{justPrefilled.note}</p>
+              <button onClick={dismissPrefillBanner} className="text-teal-600 hover:text-teal-900 text-sm leading-none shrink-0" aria-label="Dismiss">×</button>
+            </div>
+          ) : null}
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">

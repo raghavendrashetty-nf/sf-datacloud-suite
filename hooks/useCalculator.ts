@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { calculate } from '@/lib/calculator';
 import type { CalculatorInputs, Environment, Period, RatesConfig } from '@/lib/types';
+import { BASIC_HANDOFF_KEY, type BasicHandoff } from '@/lib/orgScanCreditEstimate';
 
 function buildDefaultInputs(rates: RatesConfig): CalculatorInputs {
   const volumes: Record<string, number> = {};
@@ -16,6 +17,29 @@ function buildDefaultInputs(rates: RatesConfig): CalculatorInputs {
 
 export function useCalculator(rates: RatesConfig) {
   const [inputs, setInputs] = useState<CalculatorInputs>(() => buildDefaultInputs(rates));
+  const [justPrefilled, setJustPrefilled] = useState<BasicHandoff | null>(null);
+
+  // One-time consume of a suggestion handed off from Org Scanner ("Refine in Basic
+  // Calculator"), if present. Read via effect (not the lazy useState initializer) so it's
+  // SSR-safe and consistent with this codebase's other sessionStorage/localStorage patterns.
+  // justPrefilled lets the page surface a visible banner + auto-expand the affected phase -
+  // without it, a prefill into a collapsed-by-default phase card is invisible on arrival.
+  useEffect(() => {
+    try {
+      const raw = window.sessionStorage.getItem(BASIC_HANDOFF_KEY);
+      if (!raw) return;
+      window.sessionStorage.removeItem(BASIC_HANDOFF_KEY);
+      const handoff = JSON.parse(raw) as BasicHandoff;
+      setInputs((s) => ({
+        ...s,
+        itemVolumes: { ...s.itemVolumes, ...handoff.itemVolumes },
+        itemPeriods: { ...s.itemPeriods, ...handoff.itemPeriods }
+      }));
+      setJustPrefilled(handoff);
+    } catch { /* malformed/absent handoff - ignore, defaults stand */ }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   useEffect(() => {
     setInputs((s) => {
       const volumes = { ...s.itemVolumes };
@@ -35,7 +59,8 @@ export function useCalculator(rates: RatesConfig) {
   }, [rates.items]);
   const result = useMemo(() => calculate(inputs, rates), [inputs, rates]);
   return {
-    inputs, result,
+    inputs, result, justPrefilled,
+    dismissPrefillBanner: () => setJustPrefilled(null),
     setEnvironment: (environment: Environment) => setInputs((s) => ({ ...s, environment })),
     setCost: (costPerCreditUSD: number) => setInputs((s) => ({ ...s, costPerCreditUSD: Math.max(0, costPerCreditUSD) })),
     setOverhead: (overheadPct: number) => setInputs((s) => ({ ...s, overheadPct: Math.max(0, overheadPct) })),

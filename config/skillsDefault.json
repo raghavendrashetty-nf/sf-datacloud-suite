@@ -1,131 +1,240 @@
 {
-  "meta": { "version": "1.0" },
+  "meta": {
+    "version": "2.0",
+    "source": "https://github.com/forcedotcom/sf-skills",
+    "sourceCommit": "7baeb07b36799eada4dce06d85664c0c16a269a8",
+    "syncedAt": "2026-07-29T14:57:39.214Z"
+  },
   "skills": [
     {
-      "id": "skill_streaming_ingestion",
-      "name": "Streaming Ingestion via Ingestion API",
+      "id": "skill_data360_connect",
+      "name": "Data Cloud Connect: Source Connections & Connectors",
       "phase": "ingestion",
-      "summary": "Use event/streaming ingestion for sources that need near-real-time visibility in Data Cloud.",
-      "whenToUse": "SOW mentions: real-time, near-real-time, event stream, Kafka, webhook, IoT, click-stream, or a requirement for data to be visible in Data Cloud within seconds/minutes of being generated at the source.",
-      "bestPractices": "Recommend the Streaming Ingestion API (or Kafka/webhook connector) instead of a scheduled batch data stream when the customer's stated latency requirement is under an hour. Streaming data streams have no fixed run schedule and are billed on rows processed, not run count - call this out explicitly when estimating cost. Confirm the source system can actually emit events (vs. only supporting periodic exports) before recommending this path.",
-      "relatedRateItemKeys": ["externalDataPipelineStreaming"],
-      "docs": [
-        { "label": "Data Stream Settings and Refresh Modes", "url": "https://help.salesforce.com/s/articleView?id=sf.c360_a_data_stream_edit_settings.htm&language=en_US&type=5" }
+      "summary": "Choosing and configuring the right connector for a new source system before any ingestion begins.",
+      "whenToUse": "SOW mentions: connecting a new source system, connector setup, Snowflake/Redshift/SharePoint/Heroku Postgres integration, testing a connection, or browsing source objects/schemas before building a pipeline.",
+      "bestPractices": "Prefer read-only discovery (connector catalog, existing connections) before proposing new connection creation. Different connector types have fundamentally different credential/parameter shapes - Snowflake uses key-pair auth, SharePoint Unstructured uses clientId/clientSecret/tokenEndpoint with no parameters array, Heroku Postgres/Redshift have their own shapes - never assume one generic credential shape fits all connectors. An empty connection list for a connector type usually means 'enabled but not configured yet', not 'feature unavailable' - don't conclude a capability is missing from an empty list alone. Ingestion API connector setup isn't complete until the object schema has been uploaded (schema-upsert) - creating the connection alone is not sufficient, call this out as a distinct scope line. Some external connectors can be created via API but stream creation immediately after may still require UI-only steps - don't promise a fully API-driven path for every connector type in a SOW.",
+      "relatedRateItemKeys": [
+        "internalDataPipeline",
+        "externalDataPipelineBatch"
       ],
-      "createdAt": "2026-01-01T00:00:00.000Z",
-      "updatedAt": "2026-01-01T00:00:00.000Z"
+      "docs": [
+        {
+          "label": "data360-connect skill (Salesforce sf-skills, official)",
+          "url": "https://github.com/forcedotcom/sf-skills/blob/main/skills/data360-connect/SKILL.md"
+        }
+      ],
+      "createdAt": "2026-07-29T00:00:00.000Z",
+      "updatedAt": "2026-07-29T00:00:00.000Z",
+      "sourceHash": "909a1c605c80c9f94c72fb68465f46dcb9374cb398ac0223b3779561111d940b",
+      "sourceCheckedAt": "2026-07-29T14:57:39.214Z"
     },
     {
-      "id": "skill_zero_copy_federation",
-      "name": "Zero Copy / Data Federation for External Warehouses",
+      "id": "skill_data360_prepare",
+      "name": "Data Cloud Prepare: Data Streams, DLOs & Ingestion",
       "phase": "ingestion",
-      "summary": "Query data in place in an external warehouse (Snowflake, Databricks, BigQuery, Redshift) instead of copying it into Data Cloud.",
-      "whenToUse": "SOW mentions: Snowflake, Databricks, BigQuery, Redshift, data warehouse, data lake, Zero Copy, minimize data duplication/storage, or a requirement to avoid moving sensitive data out of an existing platform.",
-      "bestPractices": "When the customer already has a mature warehouse and the primary need is querying (not full Data Cloud harmonization/unification of that data), recommend Data Federation over a full ingestion pipeline. This avoids duplicate storage cost and keeps the warehouse as source of truth. Cost is driven by rows accessed per query, not a one-time load - flag this as a usage-pattern-dependent cost in the estimate rather than a fixed number.",
-      "relatedRateItemKeys": ["dataFederationRowsAccessed"],
-      "docs": [],
-      "createdAt": "2026-01-01T00:00:00.000Z",
-      "updatedAt": "2026-01-01T00:00:00.000Z"
-    },
-    {
-      "id": "skill_einstein_prediction_builder",
-      "name": "Einstein Prediction Builder for Propensity Scoring",
-      "phase": "insights",
-      "summary": "Use a Data Cloud-native prediction model for propensity/likelihood-to-X use cases instead of a bespoke external ML pipeline.",
-      "whenToUse": "SOW mentions: propensity to buy/churn/convert, likelihood score, lead scoring, next-best-action, or a request for predictive scoring on unified profile data already inside Data Cloud.",
-      "bestPractices": "Prefer a native Data Cloud prediction (Einstein Prediction Builder / Einstein Studio) when the required inputs are already unified profile/engagement data - it avoids building and maintaining a separate export-train-import ML loop. Cost scales with inferences generated, which is typically driven by segment/population size times refresh frequency - size the estimate off the target population, not the whole DMO.",
-      "relatedRateItemKeys": ["inferences"],
-      "docs": [],
-      "createdAt": "2026-01-01T00:00:00.000Z",
-      "updatedAt": "2026-01-01T00:00:00.000Z"
-    },
-    {
-      "id": "skill_calculated_insights_scheduling",
-      "name": "Calculated Insights Scheduling for Aggregated Metrics",
-      "phase": "insights",
-      "summary": "Model recurring aggregate metrics (lifetime value, RFM, rolling counts) as scheduled Calculated Insights rather than recomputing on every query.",
-      "whenToUse": "SOW mentions: lifetime value, RFM, aggregated metric, rolling window, dashboard metric, or a recurring reporting/segmentation need built on aggregated history.",
-      "bestPractices": "Match the Calculated Insight's refresh schedule to how often the metric is actually consumed downstream (e.g. daily for a nightly segmentation job) rather than defaulting to the fastest available cadence - over-scheduling inflates credit consumption with no business benefit. Cite the specific downstream consumer (a segment, a dashboard, an activation) driving the required freshness.",
-      "relatedRateItemKeys": ["calculatedInsightsBatch"],
-      "docs": [
-        { "label": "Schedule a Calculated Insight in Data 360", "url": "https://help.salesforce.com/s/articleView?id=sf.c360_a_schedule_a_calculated_insight_in_data_cloud.htm&language=en_US&type=5" }
+      "summary": "Choosing the right stream category and ingestion mechanism once a source connection exists.",
+      "whenToUse": "SOW mentions: data streams, Data Lake Objects (DLOs), ingesting data into Data Cloud, Document AI/unstructured file ingestion, or re-scanning/refreshing ingested data after a source update.",
+      "bestPractices": "Classify each dataset as Profile (person/entity records, needs a primary key), Engagement (time-based events/interactions, needs a primary key + event time field), or Other (reference/config data, needs a primary key) before designing the stream - this classification drives downstream identity resolution and segment eligibility, and should be an explicit SOW decision, not an afterthought. CRM-backed (Salesforce) streams sync on a platform-managed schedule and are not controlled the same way as custom connector streams - don't assume a uniform refresh model across connector types when estimating cadence. For unstructured/document sources (e.g. SharePoint), first-time setup is often richer via the UI than a minimal API-driven flow - flag this as a likely UI-dependent step rather than assuming full API automation. Ingestion API payloads return HTTP 202 (accepted for processing), which is not the same as records being immediately queryable - don't size real-time expectations off acceptance alone. Validation failures on Ingestion API surface in a separate 'Problem Records' DLO family, not as a synchronous error - plan for a review step.",
+      "relatedRateItemKeys": [
+        "externalDataPipelineBatch",
+        "externalDataPipelineStreaming",
+        "internalDataPipeline",
+        "unstructuredDataProcessed"
       ],
-      "createdAt": "2026-01-01T00:00:00.000Z",
-      "updatedAt": "2026-01-01T00:00:00.000Z"
+      "docs": [
+        {
+          "label": "data360-prepare skill (Salesforce sf-skills, official)",
+          "url": "https://github.com/forcedotcom/sf-skills/blob/main/skills/data360-prepare/SKILL.md"
+        }
+      ],
+      "createdAt": "2026-07-29T00:00:00.000Z",
+      "updatedAt": "2026-07-29T00:00:00.000Z",
+      "sourceHash": "f1abccf7e9e07bf82dc1c71a5d25592ed36ed36fe93d80127dfa0c4bc0e461b4",
+      "sourceCheckedAt": "2026-07-29T14:57:39.214Z"
     },
     {
-      "id": "skill_segment_rapid_publish",
-      "name": "Segment Rapid Publish for Near-Real-Time Personalization",
+      "id": "skill_data360_harmonize",
+      "name": "Data Cloud Harmonize: DMOs, Mappings & Identity Resolution",
+      "phase": "ingestion",
+      "summary": "Mapping DLOs to DMOs and designing identity resolution rulesets to build a unified profile.",
+      "whenToUse": "SOW mentions: Data Model Objects (DMOs), field mappings, identity resolution, unified profiles, universal ID, data graphs, or building a single customer/entity view across multiple sources.",
+      "bestPractices": "Inspect the source DLO's schema before designing a mapping to a DMO - mapping quality depends on understanding the real source shape first, not just the target. Identity resolution runs are asynchronous - a 'ruleset created' result does not mean matching has completed; verify results after execution rather than assuming immediate completion when estimating a timeline. Unified DMO names are ruleset-specific, not a fixed generic name - don't assume one canonical DMO name applies across different identity resolution configurations in a multi-brand/multi-space scope. If DMO listing works but identity resolution is gated/unavailable, that's a phase-specific permission or provisioning gap, not evidence the whole Data Cloud org is broken - diagnose narrowly rather than escalating scope.",
+      "relatedRateItemKeys": [
+        "profileUnification"
+      ],
+      "docs": [
+        {
+          "label": "data360-harmonize skill (Salesforce sf-skills, official)",
+          "url": "https://github.com/forcedotcom/sf-skills/blob/main/skills/data360-harmonize/SKILL.md"
+        }
+      ],
+      "createdAt": "2026-07-29T00:00:00.000Z",
+      "updatedAt": "2026-07-29T00:00:00.000Z",
+      "sourceHash": "d0c7f14f14e6d3fa1ebf329d9a79127bdd21ac9f4859e7fb443ceffb499dc9f1",
+      "sourceCheckedAt": "2026-07-29T14:57:39.214Z"
+    },
+    {
+      "id": "skill_data360_schema_get",
+      "name": "Data Cloud Schema Introspection: DLO & DMO Field Discovery",
+      "phase": "ingestion",
+      "summary": "Listing and inspecting DLO/DMO schemas (fields, types, primary keys) via the SSOT REST API.",
+      "whenToUse": "SOW mentions: needing to inspect existing DLO/DMO field definitions, understand what data structures already exist in an org, or a discovery/audit step before designing new mappings or insights.",
+      "bestPractices": "DLO names always end in __dll and DMO names always end in __dlm - use this to distinguish the two categories when reviewing an org's existing configuration inventory. Exclude system-managed fields (DataSource__c, cdp_sys_*, KQ_*) when summarizing a schema for a business audience - focus on the custom/business fields the customer actually cares about. Retrieving a specific object's real schema before proposing a mapping or calculated insight avoids proposing a design that doesn't match the actual field set.",
+      "relatedRateItemKeys": [],
+      "docs": [
+        {
+          "label": "data360-schema-get skill (Salesforce sf-skills, official)",
+          "url": "https://github.com/forcedotcom/sf-skills/blob/main/skills/data360-schema-get/SKILL.md"
+        }
+      ],
+      "createdAt": "2026-07-29T00:00:00.000Z",
+      "updatedAt": "2026-07-29T00:00:00.000Z",
+      "sourceHash": "cfea108fc82035b1fae1a0e9bcece41a5d6454a00da85d1418144aec41acd009",
+      "sourceCheckedAt": "2026-07-29T14:57:39.214Z"
+    },
+    {
+      "id": "skill_data360_segment",
+      "name": "Data Cloud Segment: Building & Publishing Segments",
       "phase": "activation",
-      "summary": "Use Rapid Publish (1-4 hour cadence) for activation targets that need fresher segment membership than the standard 12/24 hour publish.",
-      "whenToUse": "SOW mentions: real-time personalization, same-day activation, abandoned cart within hours, or an explicit requirement that segment membership changes reach the activation target faster than once a day.",
-      "bestPractices": "Only recommend Rapid Publish when the customer has a concrete latency requirement under 12 hours and the activation target supports it (Marketing Cloud Engagement) - it filters to the last 7 days of engagement data, which is a real constraint to flag, not just a cost driver. Standard Publish is almost always sufficient and cheaper for batch-oriented campaigns.",
-      "relatedRateItemKeys": ["segmentRowsProcessed"],
-      "docs": [
-        { "label": "Increase Segment Refresh from Data 360 to the Activation Targets (Rapid Publish)", "url": "https://help.salesforce.com/s/articleView?id=sf.c360_a_rapid_segment_publish.htm&language=en_US&type=5" }
+      "summary": "Creating and publishing audience segments and verifying membership/counts after publish.",
+      "whenToUse": "SOW mentions: audience segmentation, segment creation, segment publishing, member counts, or troubleshooting segment logic in Data Cloud.",
+      "bestPractices": "Data Cloud segment SQL is a distinct query language from standard Salesforce SOQL - don't assume SOQL syntax or functions apply when scoping segment logic work. Segment creation can be sensitive to API version - pin to a known-stable version when giving implementation guidance rather than assuming the latest default behaves identically. Publish is asynchronous - a segment 'created' or 'published' response doesn't guarantee membership is final; verify with an explicit count or query afterward rather than assuming success from the initial response when estimating timelines. An empty segment list on a Data Cloud org usually means the module is reachable but nothing has been configured yet, not that segmentation is unavailable.",
+      "relatedRateItemKeys": [
+        "segmentRowsProcessed"
       ],
-      "createdAt": "2026-01-01T00:00:00.000Z",
-      "updatedAt": "2026-01-01T00:00:00.000Z"
+      "docs": [
+        {
+          "label": "data360-segment skill (Salesforce sf-skills, official)",
+          "url": "https://github.com/forcedotcom/sf-skills/blob/main/skills/data360-segment/SKILL.md"
+        }
+      ],
+      "createdAt": "2026-07-29T00:00:00.000Z",
+      "updatedAt": "2026-07-29T00:00:00.000Z",
+      "sourceHash": "4ff25e496a77a308bcbf28d03070866d07c4af503bdcfe374fda40be1b9ad315",
+      "sourceCheckedAt": "2026-07-29T14:57:39.214Z"
     },
     {
-      "id": "skill_realtime_query_api",
-      "name": "Real-Time Query API for Personalization Endpoints",
-      "phase": "act",
-      "summary": "Use the Data Cloud real-time/data query API to serve sub-second lookups directly to a web/mobile personalization endpoint.",
-      "whenToUse": "SOW mentions: website personalization, sub-second, real-time lookup, API call at runtime, or a requirement to read unified profile/segment data from a customer-facing app at the moment of interaction.",
-      "bestPractices": "Recommend this path only when the consumer is a live customer-facing surface (web/mobile/API) needing per-request reads - for internal reporting or batch exports, a scheduled export or Calculated Insight is cheaper and simpler. Cost is driven by query/lookup volume at the traffic pattern's peak, not average - size the estimate off expected peak concurrent sessions.",
-      "relatedRateItemKeys": ["dataQueries", "streamingActionsLookups"],
-      "docs": [],
-      "createdAt": "2026-01-01T00:00:00.000Z",
-      "updatedAt": "2026-01-01T00:00:00.000Z"
-    },
-    {
-      "id": "skill_predictive_asset_scoring",
-      "name": "Predictive Scoring for Asset Health / Failure Risk",
+      "id": "skill_data360_calculated_insights",
+      "name": "Data Cloud Calculated Insights: Creation & Verification",
       "phase": "insights",
-      "summary": "Use Data Cloud predictions on unified asset + maintenance-history profiles to score failure risk or remaining useful life, instead of a standalone external ML pipeline.",
-      "whenToUse": "SOW mentions: predictive maintenance, failure risk, remaining useful life, asset health score, parts replacement prediction, or any request to forecast when equipment/parts will need service based on historical usage/maintenance data.",
-      "bestPractices": "This only works well once maintenance history, usage/telemetry, and asset records are unified into a single profile - call out identity resolution/profile unification as a prerequisite, not an afterthought. Prefer a native Data Cloud prediction over an external ML pipeline only when the required historical signals are already inside (or easily ingested into) Data Cloud; if the real modeling complexity lives in specialized reliability-engineering models, flag that native prediction may not be sufficient and a hybrid approach (external model, Data Cloud for delivery/activation of the score) may be more honest. Cost scales with inferences generated against the target asset population, not the full fleet if only a subset is in scope.",
-      "relatedRateItemKeys": ["inferences", "profileUnification"],
-      "docs": [],
-      "createdAt": "2026-01-01T00:00:00.000Z",
-      "updatedAt": "2026-01-01T00:00:00.000Z"
+      "summary": "Creating, running, and verifying calculated insights (aggregated metrics) built on unified profile data.",
+      "whenToUse": "SOW mentions: calculated insights, lifetime value, aggregated/recurring metrics, or a computed metric derived from Data Cloud data that feeds a segment, dashboard, or activation.",
+      "bestPractices": "Calculated insight execution is not guaranteed synchronous - verify results with an explicit query (e.g. a COUNT or aggregate SQL check) rather than assuming the run command's quick return means the computation is complete, especially when estimating a delivery timeline. Calculated insight assets have different constraints than segment SQL even though both run on Data Cloud SQL - don't assume identical capabilities or limits between the two asset types when scoping work that touches both.",
+      "relatedRateItemKeys": [
+        "calculatedInsightsBatch",
+        "calculatedInsightsStreaming"
+      ],
+      "docs": [
+        {
+          "label": "data360-segment skill (Salesforce sf-skills, official - covers Calculated Insights)",
+          "url": "https://github.com/forcedotcom/sf-skills/blob/main/skills/data360-segment/SKILL.md"
+        }
+      ],
+      "createdAt": "2026-07-29T00:00:00.000Z",
+      "updatedAt": "2026-07-29T00:00:00.000Z",
+      "sourceHash": "4ff25e496a77a308bcbf28d03070866d07c4af503bdcfe374fda40be1b9ad315",
+      "sourceCheckedAt": "2026-07-29T14:57:39.214Z"
     },
     {
-      "id": "skill_identity_resolution_profile_unification",
-      "name": "Unified Profile via Identity Resolution",
-      "phase": "ingestion",
-      "summary": "Match and merge records across multiple source systems (CRM, ERP, service, IoT/telemetry) into one unified profile before any downstream insight or activation work.",
-      "whenToUse": "SOW mentions: multiple source systems for the same entity (customer, asset, equipment), a 360-degree/unified view, duplicate records across systems, or any insight/prediction/activation use case that depends on data joined across more than one system.",
-      "bestPractices": "Treat this as the foundational step for almost every other skill in this library - a prediction, calculated insight, or activation built on unmerged, duplicated records will be unreliable regardless of how good the downstream model is. Scope the match rules to the specific identifying fields the SOW's source systems actually share (e.g. serial number, account ID, email) rather than assuming a generic match rule will work. Cost is driven by unified profile volume, not raw source-row volume.",
-      "relatedRateItemKeys": ["profileUnification"],
-      "docs": [],
-      "createdAt": "2026-01-01T00:00:00.000Z",
-      "updatedAt": "2026-01-01T00:00:00.000Z"
+      "id": "skill_data360_activate",
+      "name": "Data Cloud Activate: Activation Targets & Downstream Delivery",
+      "phase": "activation",
+      "summary": "Setting up activation targets and pushing segments/insights to downstream systems.",
+      "whenToUse": "SOW mentions: activating a segment, activation targets, data actions, or pushing Data Cloud audiences/data into an external or downstream system (e.g. Marketing Cloud, an ad platform).",
+      "bestPractices": "Activation design depends on a healthy, already-published upstream segment or insight - don't scope activation work independently of confirming the upstream audience is actually ready first. Destination/platform configuration (activation targets, data action targets) is typically set up before the activation itself, not after - sequence SOW tasks in that order. Downstream credential and platform-specific constraints (e.g. a specific ad platform's own API limits) often live outside Data Cloud's own configuration surface entirely - flag these as a separate validation concern rather than folding them into the Data Cloud estimate.",
+      "relatedRateItemKeys": [
+        "segmentRowsProcessed"
+      ],
+      "docs": [
+        {
+          "label": "data360-activate skill (Salesforce sf-skills, official)",
+          "url": "https://github.com/forcedotcom/sf-skills/blob/main/skills/data360-activate/SKILL.md"
+        }
+      ],
+      "createdAt": "2026-07-29T00:00:00.000Z",
+      "updatedAt": "2026-07-29T00:00:00.000Z",
+      "sourceHash": "e95926161f83cad3deb1d758c0db4bee1b87c0950438349fb864b9b6e9fa4e23",
+      "sourceCheckedAt": "2026-07-29T14:57:39.214Z"
     },
     {
-      "id": "skill_unstructured_document_processing",
-      "name": "Unstructured Document Processing for Service/Case Data",
-      "phase": "ingestion",
-      "summary": "Extract structured signal (entities, categories, sentiment) from unstructured text - case notes, service logs, manuals, transcripts - via Intelligent Processing before it can feed insights or an agent.",
-      "whenToUse": "SOW mentions: case notes, service tickets, technician logs, manuals/documentation, call transcripts, Agentforce grounding on unstructured content, or any requirement to make free-text data queryable/usable by a prediction or an agent.",
-      "bestPractices": "Recommend this only when the SOW's downstream use case (a prediction, a segment, an Agentforce topic/action) actually needs the extracted structured fields - don't recommend blanket document ingestion without a named consumer. Cost is driven by volume of unstructured content processed, which is usually much smaller than the raw document count once you scope to the fields actually needed downstream.",
-      "relatedRateItemKeys": ["unstructuredDataProcessed", "intelligentProcessing"],
-      "docs": [],
-      "createdAt": "2026-01-01T00:00:00.000Z",
-      "updatedAt": "2026-01-01T00:00:00.000Z"
+      "id": "skill_data360_query",
+      "name": "Data Cloud Query & Search: SQL, Vector Search, Metadata Introspection",
+      "phase": "__general__",
+      "summary": "Running Data Cloud SQL, vector/hybrid search, and metadata introspection against ingested/unified data.",
+      "whenToUse": "SOW mentions: querying Data Cloud data directly, vector search, semantic/hybrid search, search indexes, or programmatic metadata/schema introspection of DMOs/DLOs.",
+      "bestPractices": "Data Cloud SQL is a distinct query language from standard Salesforce SOQL, with different capabilities and syntax (e.g. quoted table names) - don't assume SOQL patterns transfer when scoping query/reporting work. For medium-to-large result sets, prefer paginated or asynchronous query patterns over naive single-shot queries, which can time out or be inefficient at scale - flag this in any SOW involving large exports. Vector and hybrid search depend entirely on a healthy, already-created search index - don't scope a semantic search use case without accounting for search index setup and its own lifecycle as a prerequisite. Hybrid search prefiltering only works on fields explicitly configured as prefilter-capable at index-creation time - this needs to be planned upfront, not added after the fact.",
+      "relatedRateItemKeys": [
+        "dataQueries"
+      ],
+      "docs": [
+        {
+          "label": "data360-query skill (Salesforce sf-skills, official)",
+          "url": "https://github.com/forcedotcom/sf-skills/blob/main/skills/data360-query/SKILL.md"
+        }
+      ],
+      "createdAt": "2026-07-29T00:00:00.000Z",
+      "updatedAt": "2026-07-29T00:00:00.000Z",
+      "sourceHash": "0024d050f284e80013ffeab0187c9fd2c74698f3247d456afeda8eb1ff638473",
+      "sourceCheckedAt": "2026-07-29T14:57:39.214Z"
     },
     {
-      "id": "skill_data_transforms_custom_aggregation",
-      "name": "Data Transforms for Custom Aggregations Feeding a Model",
-      "phase": "ingestion",
-      "summary": "Use scheduled Data Transforms to pre-aggregate or reshape ingested data (e.g. rolling usage windows, derived features) before it feeds a Calculated Insight or a prediction.",
-      "whenToUse": "SOW mentions: derived/calculated fields not present at source, feature engineering for a model, combining fields across objects before analysis, or a data-shape mismatch between what's ingested and what a downstream insight/prediction needs.",
-      "bestPractices": "Reach for a Data Transform when the reshaping logic needs to run once and be reused by multiple downstream consumers (a prediction and a dashboard, for example) rather than duplicating the same SQL-like logic in every Calculated Insight. Match the transform's schedule to the least-frequent downstream consumer, the same way as Calculated Insight scheduling - don't default to the fastest cadence available.",
-      "relatedRateItemKeys": ["dataTransformsBatch"],
-      "docs": [],
-      "createdAt": "2026-01-01T00:00:00.000Z",
-      "updatedAt": "2026-01-01T00:00:00.000Z"
+      "id": "skill_data360_orchestrate",
+      "name": "Data Cloud Orchestration: Data Spaces, Data Kits & Cross-Phase Design",
+      "phase": "__general__",
+      "summary": "Deciding how work spans Connect -> Prepare -> Harmonize -> Segment -> Act, and managing data spaces/data kits.",
+      "whenToUse": "SOW mentions: a multi-step/end-to-end Data Cloud pipeline spanning multiple phases, data spaces (multi-brand/region/business-unit partitioning), data kits, or a need to decide which Data Cloud phase a given requirement actually belongs to.",
+      "bestPractices": "A single monolithic 'set up Data Cloud' scope item usually decomposes into distinct Connect/Prepare/Harmonize/Segment/Act workstreams with different owners and sequencing - break these out explicitly in a SOW rather than estimating them as one lump task. Data Spaces partition profile unification, insights, and activation by brand/region/business-unit without provisioning a separate org - recommend a single default Data Space for simple/pilot scopes, and multiple Data Spaces only when the SOW genuinely calls out separate brands/regions/business units needing isolated unification or segmentation. Cross-phase troubleshooting root causes are often phase-specific gaps (e.g. one module gated by permissions) rather than a whole-product outage - diagnose the specific failing phase rather than assuming an all-or-nothing platform issue.",
+      "relatedRateItemKeys": [],
+      "docs": [
+        {
+          "label": "data360-orchestrate skill (Salesforce sf-skills, official)",
+          "url": "https://github.com/forcedotcom/sf-skills/blob/main/skills/data360-orchestrate/SKILL.md"
+        }
+      ],
+      "createdAt": "2026-07-29T00:00:00.000Z",
+      "updatedAt": "2026-07-29T00:00:00.000Z",
+      "sourceHash": "598c6efdf1ae193a349ea071ef6d41bc40b1bc84e3838d59b093ab5448dd4f00",
+      "sourceCheckedAt": "2026-07-29T14:57:39.214Z"
+    },
+    {
+      "id": "skill_data360_code_extension",
+      "name": "Data Cloud Code Extensions: Custom Python Transformations",
+      "phase": "compute",
+      "summary": "Developing, testing, and deploying custom Python code extensions that read/write DLOs and DMOs on Data Cloud's own compute infrastructure.",
+      "whenToUse": "SOW mentions: custom/bespoke data transformations that built-in Calculated Insights or standard mappings can't express, custom Python logic against Data Cloud data, or a real-time function-based transform (as opposed to a scheduled batch transform).",
+      "bestPractices": "Distinguish script-based (batch) from function-based (real-time) code extensions upfront - they have different runtime models and should be scoped as distinct SOW line items, not interchangeably. The deployable unit is the generated payload/ subdirectory, not the project root - a SOW/runbook that treats them as the same path will fail at deploy. Required permissions (DLO/DMO read/write) are derived by scanning the entrypoint file, not declared manually - budget a scan-and-review step before first deploy. Custom code extensions consume Data Cloud compute credits per compute unit (distinct from pipeline/query credits), so cost estimates for this capability should size against the codeExtension rate item, not a data-pipeline rate item. Docker is required for deploy but not for local script development/testing - don't over-scope local dev environment setup.",
+      "relatedRateItemKeys": [
+        "codeExtension"
+      ],
+      "docs": [
+        {
+          "label": "data360-code-extension-generate skill (Salesforce sf-skills, official)",
+          "url": "https://github.com/forcedotcom/sf-skills/blob/main/skills/data360-code-extension-generate/SKILL.md"
+        }
+      ],
+      "createdAt": "2026-07-29T00:00:00.000Z",
+      "updatedAt": "2026-07-29T00:00:00.000Z",
+      "sourceHash": "54db69aef31d3f76fdc1863818d9f806c8e166fee864a326dea8c4903bc36ff0",
+      "sourceCheckedAt": "2026-07-29T14:57:39.214Z"
+    },
+    {
+      "id": "skill_agentforce_d360_analyze",
+      "name": "Data Cloud Agentforce Session Analysis (Observability)",
+      "phase": "__general__",
+      "summary": "Reconstructing a single Agentforce session's full trace from Data Cloud's session data model, for debugging/observability.",
+      "whenToUse": "SOW mentions: Agentforce session tracing, session-level observability/debugging, or auditing what a specific agent conversation actually did using Data Cloud's session data.",
+      "bestPractices": "This is a Data-Cloud-only observability capability - it reconstructs what Data Cloud already materialized about a session, and cannot answer real-time availability/latency/SLO questions that require platform telemetry beyond Data Cloud. Scope this as a debugging/audit capability, not a substitute for full application performance monitoring, when a SOW conflates general 'observability' with this specific session-reconstruction feature.",
+      "relatedRateItemKeys": [],
+      "docs": [
+        {
+          "label": "agentforce-d360-analyze skill (Salesforce sf-skills, official)",
+          "url": "https://github.com/forcedotcom/sf-skills/blob/main/skills/agentforce-d360-analyze/SKILL.md"
+        }
+      ],
+      "createdAt": "2026-07-29T00:00:00.000Z",
+      "updatedAt": "2026-07-29T00:00:00.000Z",
+      "sourceHash": "17bae30d5b5521a555b06c5d8574d8b34cac34715ba3a543d0fa52cf7a66b45e",
+      "sourceCheckedAt": "2026-07-29T14:57:39.214Z"
     },
     {
       "id": "skill_sow_technical_review_framework",
@@ -134,7 +243,13 @@
       "summary": "A pre-signature risk/feasibility checklist for any Data Cloud SOW - apply alongside whichever other skills match.",
       "whenToUse": "Always apply this whenever the SOW/scope document references Data Cloud, Zero Copy, Data Streams, Data Spaces, Calculated Insights, Identity Resolution, Einstein Prediction Builder, Agentforce, or Salesforce-to-external-source integration - regardless of which other skills also match. This is a review framework, not a single narrow trigger.",
       "bestPractices": "Flag these recurring risk areas when present in the SOW, each with a concrete recommendation rather than just an observation: (1) Zero Copy - does it require a specific source-platform edition/federation setup not confirmed in the assumptions, and is there a stated ingestion fallback if prerequisites aren't met? (2) Data Streams/ingestion - does the number of business objects/entities match the stated number of streams/instances (one source can feed many objects = many streams - flag if the SOW's language conflates them), and are refresh cadence/freshness SLAs specified? (3) Data Spaces - is the design right-sized for current scope while still extensible for future phases? (4) Predictive models (Prediction Builder/similar) - is there a stated minimum historical data volume for reliable training, does the model need data on an object type different from where it lands via ingestion (an implied sync step that may be unscoped), and are thresholds/outputs static vs dynamic in a way that should be surfaced to the customer? (5) Agentforce/agent integration - treat this as the highest technical risk regardless of how briefly it's scoped; a one-line bullet covering grounding + actions/topics + write-back usually understates its complexity - flag it for a named integration owner. (6) Assumptions section - scan for blank/incomplete/dropped numbered items and unrealistic data-access/timeline assumptions. (7) Commercial math - reconcile whether per-workstream hours and fees actually sum to the stated total (before and after any discount), and whether billing terms match. Track every stated numeric cap (\"up to N objects\", \"up to 1 instance\") precisely - these are where scope disputes originate later. Stay evenhanded about vendor design choices (e.g. single vs. multiple Data Spaces) - frame as a trade-off rather than declaring it wrong, unless it conflicts with a stated platform constraint.",
-      "relatedRateItemKeys": ["profileUnification", "inferences", "externalDataPipelineBatch", "externalDataPipelineStreaming", "dataFederationRowsAccessed"],
+      "relatedRateItemKeys": [
+        "profileUnification",
+        "inferences",
+        "externalDataPipelineBatch",
+        "externalDataPipelineStreaming",
+        "dataFederationRowsAccessed"
+      ],
       "docs": [],
       "createdAt": "2026-01-01T00:00:00.000Z",
       "updatedAt": "2026-01-01T00:00:00.000Z"

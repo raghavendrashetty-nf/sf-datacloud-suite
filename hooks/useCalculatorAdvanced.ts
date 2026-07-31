@@ -11,6 +11,7 @@ import {
   aggregatePipelines, annualRowsForPipeline, newPipeline,
   PIPELINE_DRIVEN_ITEM_KEYS, type Pipeline
 } from '@/lib/pipeline';
+import { ADVANCED_HANDOFF_KEY, type AdvancedHandoff } from '@/lib/orgScanCreditEstimate';
 
 interface AdvancedState {
   environment: Environment;
@@ -96,6 +97,41 @@ function deriveInputs(state: AdvancedState, rates: RatesConfig): CalculatorInput
 
 export function useCalculatorAdvanced(rates: RatesConfig) {
   const [state, setState] = useState<AdvancedState>(() => buildDefaultState(rates));
+  const [justPrefilled, setJustPrefilled] = useState<AdvancedHandoff | null>(null);
+
+  // One-time consume of a suggestion handed off from Org Scanner ("Refine in Advanced
+  // Calculator"), if present - either a new pipeline (external) or a single item's
+  // volume/mode/frequency (internal, which isn't pipeline-driven in this model).
+  // justPrefilled lets the page surface a visible banner + auto-expand the affected phase -
+  // without it, a prefill into a collapsed-by-default phase card is invisible on arrival.
+  useEffect(() => {
+    try {
+      const raw = window.sessionStorage.getItem(ADVANCED_HANDOFF_KEY);
+      if (!raw) return;
+      window.sessionStorage.removeItem(ADVANCED_HANDOFF_KEY);
+      const handoff = JSON.parse(raw) as AdvancedHandoff;
+      if (handoff.kind === 'pipeline' && handoff.pipeline) {
+        const p = handoff.pipeline;
+        const pipeline: Pipeline = {
+          ...newPipeline(p.connectionKey, 'batch'),
+          object: p.object, volumePerRun: p.volumePerRun, runMode: p.runMode,
+          frequency: p.frequency, manualRunsPerYear: p.manualRunsPerYear
+        };
+        setState((s) => ({ ...s, pipelines: [...s.pipelines, pipeline] }));
+      } else if (handoff.kind === 'legacy' && handoff.legacy) {
+        const l = handoff.legacy;
+        setState((s) => ({
+          ...s,
+          itemVolumePerRun: { ...s.itemVolumePerRun, [l.key]: l.volumePerRun },
+          itemRefreshModes: { ...s.itemRefreshModes, [l.key]: l.runMode },
+          itemFrequencies: { ...s.itemFrequencies, [l.key]: l.frequency },
+          ...(l.manualRunsPerYear ? { itemManualRuns: { ...s.itemManualRuns, [l.key]: l.manualRunsPerYear } } : {})
+        }));
+      }
+      setJustPrefilled(handoff);
+    } catch { /* malformed/absent handoff - ignore, defaults stand */ }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
     setState((s) => {
@@ -125,7 +161,8 @@ export function useCalculatorAdvanced(rates: RatesConfig) {
   const pipelineAgg = useMemo(() => aggregatePipelines(state.pipelines), [state.pipelines]);
 
   return {
-    state, inputs, result, pipelineAgg,
+    state, inputs, result, pipelineAgg, justPrefilled,
+    dismissPrefillBanner: () => setJustPrefilled(null),
 
     setEnvironment: (environment: Environment) => setState((s) => ({ ...s, environment })),
     setCost: (costPerCreditUSD: number) => setState((s) => ({ ...s, costPerCreditUSD: Math.max(0, costPerCreditUSD) })),
