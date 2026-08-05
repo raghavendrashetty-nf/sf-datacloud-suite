@@ -109,7 +109,7 @@ export default function LandingPage() {
               )}
               title="Credit Calculator - Basic"
               badge="Simple" badgeClass="bg-sky-100 text-sky-700"
-              description="Estimate credit consumption and USD cost from the official Platform Services rate sheet."
+              description="Estimate cost under either billing model: Credit-Based Consumption (Data Services Credits) or the newer Flex Credits."
               cta="Open Calculator"
             />
             <LiveToolCard

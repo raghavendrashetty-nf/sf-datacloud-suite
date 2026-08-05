@@ -135,6 +135,11 @@ export default function ConnectionForm({
               <h3 className="text-base font-bold text-slate-900">Connected to Salesforce</h3>
               {info.isSandbox ? <span className="chip bg-amber-100 text-amber-800 font-semibold">SANDBOX</span>
                               : <span className="chip bg-emerald-100 text-emerald-800 font-semibold">PRODUCTION</span>}
+              {info.authMethod === 'oauth' ? (
+                <span className="chip bg-indigo-100 text-indigo-800 font-semibold">
+                  Connected via OAuth{info.hasRefreshToken ? ' (refresh token saved)' : ''}
+                </span>
+              ) : null}
               {readRemembered(rememberKey) ? <span className="chip bg-slate-100 text-slate-600 font-semibold">Remembered on this device</span> : null}
             </div>
             <dl className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-1.5 text-xs">

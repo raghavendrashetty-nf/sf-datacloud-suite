@@ -1,0 +1,154 @@
+{
+  "meta": {
+    "version": "1.0",
+    "source": "Salesforce Flex Credits Rate Card (effective June 17, 2026)",
+    "url": "https://www.salesforce.com/en-us/wp-content/uploads/sites/4/assets/pdf/agentforce/Flex-Credits-Rate-Card-06.17.2026.pdf",
+    "warning": "Flex Credits are a SEPARATE, newer billing model from the Credit-Based Consumption (Data Services Credits) model modeled elsewhere in this app - only orgs purchasing/renewing after Feb 24, 2026 can be on Flex Credits, and existing orgs stay on Data Services Credits unless they switch. These are two different currencies with no stated conversion rate between them - do not compare totals across the two calculators directly. No $/credit USD rate is published for Flex Credits - it is set per Order Form, so USD cost here requires the user's own rate.",
+    "note": "phase fields below are this app's own best-fit categorization for consistent grouping/coloring with the rest of the app - Salesforce's rate card does not itself group these by phase."
+  },
+  "settings": {
+    "daysPerYear": 365,
+    "weeksPerYear": 52,
+    "monthsPerYear": 12
+  },
+  "tierSchedule": [
+    { "upTo": 300000, "label": "Base Tier (up to 300K credits/month)" },
+    { "upTo": 1500000, "label": "Tier 2 (300K - 1.5M credits/month)" },
+    { "upTo": 12500000, "label": "Tier 3 (1.5M - 12.5M credits/month)" },
+    { "upTo": null, "label": "Tier 4 (after 12.5M credits/month)" }
+  ],
+  "items": [
+    {
+      "key": "flexDataPrep",
+      "phase": "ingestion",
+      "label": "Data 360 Prep",
+      "unit": "Per 1 Million Rows Processed",
+      "unitDivisor": 1000000,
+      "unitLabel": "rows",
+      "unitSingular": "row",
+      "description": "Ingestion/prep phase (Data Streams, DLOs) rows processed.",
+      "tiersProduction": [40, 32, 16, 8],
+      "sandboxMultiplier": 32
+    },
+    {
+      "key": "flexUnification",
+      "phase": "ingestion",
+      "label": "Data 360 Unification",
+      "unit": "Per 1 Million Rows Processed",
+      "unitDivisor": 1000000,
+      "unitLabel": "rows",
+      "unitSingular": "row",
+      "description": "Identity resolution / profile unification rows processed.",
+      "tiersProduction": [75000, 60000, 30000, 15000],
+      "sandboxMultiplier": 60000
+    },
+    {
+      "key": "flexSegmentation",
+      "phase": "activation",
+      "label": "Data 360 Segmentation",
+      "unit": "Per 1 Million Rows Processed",
+      "unitDivisor": 1000000,
+      "unitLabel": "rows",
+      "unitSingular": "row",
+      "description": "Segment publish/evaluation rows processed.",
+      "tiersProduction": [50, 40, 20, 10],
+      "sandboxMultiplier": 40
+    },
+    {
+      "key": "flexActivation",
+      "phase": "activation",
+      "label": "Data 360 Activation",
+      "unit": "Per 1 Million Rows Processed",
+      "unitDivisor": 1000000,
+      "unitLabel": "rows",
+      "unitSingular": "row",
+      "description": "Rows activated to downstream destinations.",
+      "tiersProduction": [60, 48, 24, 12],
+      "sandboxMultiplier": 48
+    },
+    {
+      "key": "flexZeroCopySharingOut",
+      "phase": "ingestion",
+      "label": "Data 360 Zero-Copy Sharing-Out",
+      "unit": "Per 1 Million Rows Shared",
+      "unitDivisor": 1000000,
+      "unitLabel": "rows",
+      "unitSingular": "row",
+      "description": "Rows shared out of Data Cloud via zero-copy Data Share.",
+      "tiersProduction": [60, 48, 24, 12],
+      "sandboxMultiplier": 48
+    },
+    {
+      "key": "flexQueries",
+      "phase": "act",
+      "label": "Data 360 Queries",
+      "unit": "Per 1 Million Rows Processed",
+      "unitDivisor": 1000000,
+      "unitLabel": "rows",
+      "unitSingular": "row",
+      "description": "Ad-hoc query API rows returned.",
+      "tiersProduction": [3, 2.4, 1.2, 0.6],
+      "sandboxMultiplier": 2.4
+    },
+    {
+      "key": "flexUnstructuredProcessing",
+      "phase": "ingestion",
+      "label": "Data 360 Unstructured Processing",
+      "unit": "Per 1 Megabyte Processed",
+      "unitDivisor": 1,
+      "unitLabel": "megabytes",
+      "unitSingular": "megabyte",
+      "description": "Unstructured content chunked/vectorized for AI use cases.",
+      "tiersProduction": [150, 120, 60, 30],
+      "sandboxMultiplier": 120
+    },
+    {
+      "key": "flexIntelligentProcessing",
+      "phase": "ingestion",
+      "label": "Data 360 Intelligent Processing",
+      "unit": "Per 1 Megabyte Processed",
+      "unitDivisor": 1,
+      "unitLabel": "megabytes",
+      "unitSingular": "megabyte",
+      "description": "AI-driven intelligent processing (semantic enrichment, entity extraction, etc.).",
+      "tiersProduction": [600, 480, 240, 120],
+      "sandboxMultiplier": 480
+    },
+    {
+      "key": "flexStreamingPipeline",
+      "phase": "ingestion",
+      "label": "Data 360 Streaming Pipeline",
+      "unit": "Per 1 Million Rows Processed",
+      "unitDivisor": 1000000,
+      "unitLabel": "rows",
+      "unitSingular": "row",
+      "description": "Rows processed via streaming ingestion/transform pipelines.",
+      "tiersProduction": [3500, 2800, 1400, 700],
+      "sandboxMultiplier": 2800
+    },
+    {
+      "key": "flexRealTimePipeline",
+      "phase": "realtime",
+      "label": "Data 360 Real-Time Pipeline",
+      "unit": "Per 1 Million Combined Events, API & Actions",
+      "unitDivisor": 1000000,
+      "unitLabel": "events",
+      "unitSingular": "event",
+      "description": "End-to-end sub-second events, API calls, and actions.",
+      "tiersProduction": [250000, 200000, 100000, 50000],
+      "sandboxMultiplier": 200000
+    },
+    {
+      "key": "flexCodeExtension",
+      "phase": "compute",
+      "label": "Data 360 Code Extension",
+      "unit": "Per Compute Unit",
+      "unitDivisor": 1,
+      "unitLabel": "compute units",
+      "unitSingular": "compute unit",
+      "description": "Custom code extensions running on Data Cloud infrastructure.",
+      "tiersProduction": [40, 32, 16, 8],
+      "sandboxMultiplier": 32
+    }
+  ]
+}

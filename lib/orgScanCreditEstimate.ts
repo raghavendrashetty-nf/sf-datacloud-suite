@@ -144,3 +144,18 @@ export function buildAdvancedHandoff(totalRows: number, bucket: PipelineBucket, 
     note
   };
 }
+
+export const FLEX_HANDOFF_KEY = 'sfdc.flexCredits.suggestedInputs.v1';
+export interface FlexHandoff { itemKey: string; volume: number; period: Period; note: string; }
+
+// Flex Credits' "Data 360 Prep" is a single, unified ingestion/prep rate - unlike Credit-Based
+// Consumption there's no internal-vs-external connector split to choose here, so this handoff
+// needs no bucket parameter at all.
+export function buildFlexHandoff(totalRows: number, period: Period): FlexHandoff {
+  return {
+    itemKey: 'flexDataPrep',
+    volume: totalRows,
+    period,
+    note: `Prefilled from Org Scanner: ${totalRows.toLocaleString()} rows currently in your Data Lake Objects, assumed to refresh once per ${period}, applied to Data 360 Prep. This is a starting point, not a measured rate - adjust the volume/period to match your actual pipeline design.`
+  };
+}

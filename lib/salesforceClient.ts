@@ -109,7 +109,44 @@ export async function setTargetConnection(config: SFConnectionConfig): Promise<C
     connected: true, username: config.username, displayName,
     organizationId: userInfo.organizationId, organizationName,
     instanceUrl: conn.instanceUrl, isSandbox, apiVersion: conn.version,
-    connectedAt: new Date().toISOString()
+    connectedAt: new Date().toISOString(), authMethod: 'password'
+  };
+  cache.targetConn = conn; cache.targetInfo = info;
+  return info;
+}
+
+// Builds the target connection from a real OAuth 2.0 token response (Web Server / Authorization
+// Code flow) instead of a username/password - the connection carries the refresh token and the
+// same OAuth2 client config, so jsforce can silently refresh the access token itself on expiry.
+// The refresh token lives only in this server-memory cache (same as every other credential in
+// this app) - it is never written to disk, and does not survive a server restart.
+export async function setTargetConnectionFromOAuth(oauth2: any, tokenResponse: {
+  access_token: string; refresh_token?: string; instance_url: string; id: string;
+}): Promise<ConnectionInfo> {
+  const jsforce: any = await import('jsforce');
+  const Connection = jsforce.Connection ?? jsforce.default?.Connection;
+  const conn = new Connection({
+    oauth2, instanceUrl: tokenResponse.instance_url,
+    accessToken: tokenResponse.access_token, refreshToken: tokenResponse.refresh_token,
+    version: '59.0'
+  });
+
+  let username = '', displayName = '', organizationId = '', organizationName = '', isSandbox = false;
+  try {
+    const idResp: any = await conn.identity();
+    username = idResp.username || ''; displayName = idResp.display_name || '';
+    organizationId = idResp.organization_id || '';
+  } catch {}
+  try {
+    const org = await conn.query('SELECT Id, Name, IsSandbox FROM Organization LIMIT 1');
+    if (org.records?.[0]) { organizationName = org.records[0].Name || ''; isSandbox = !!org.records[0].IsSandbox; }
+  } catch {}
+
+  const info: ConnectionInfo = {
+    connected: true, username, displayName,
+    organizationId, organizationName,
+    instanceUrl: conn.instanceUrl, isSandbox, apiVersion: conn.version,
+    connectedAt: new Date().toISOString(), authMethod: 'oauth', hasRefreshToken: !!tokenResponse.refresh_token
   };
   cache.targetConn = conn; cache.targetInfo = info;
   return info;

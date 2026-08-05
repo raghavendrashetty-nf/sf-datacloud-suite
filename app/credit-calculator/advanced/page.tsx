@@ -87,6 +87,7 @@ export default function CreditCalculatorAdvancedPage() {
           <div className="flex items-center gap-2 flex-wrap">
             <h1 className="text-2xl font-bold text-slate-900">Credit Consumption Calculator — Advanced</h1>
             <span className="chip bg-indigo-100 text-indigo-700 font-semibold">Refresh Modes &amp; Pipelines</span>
+            <span className="chip bg-slate-100 text-slate-600 font-semibold">Credit-Based Consumption</span>
           </div>
           <p className="text-sm text-slate-600 mt-1">
             Discovery/documentation-grade estimate: model Refresh Mode &amp; Run Frequency per phase and build out real Data Ingestion pipelines.
@@ -94,6 +95,8 @@ export default function CreditCalculatorAdvancedPage() {
           <p className="text-xs text-slate-500 mt-1">
             Rate source: <a href={rates.meta.url} target="_blank" rel="noreferrer" className="underline">{rates.meta.source}</a>
             {' · '}<Link href="/credit-calculator" className="underline">Switch to Basic Calculator</Link>
+            {' · '}On the newer Flex Credits billing model instead?{' '}
+            <Link href="/credit-calculator?mode=flex_credits" className="underline text-emerald-700 hover:text-emerald-900">Try Flex Credits (New) on the Basic Calculator</Link>
           </p>
           {justPrefilled ? (
             <div className="mt-3 flex items-start justify-between gap-3 rounded-lg border border-teal-200 bg-teal-50 px-3 py-2 text-xs text-teal-800">

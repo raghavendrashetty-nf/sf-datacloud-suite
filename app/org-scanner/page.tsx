@@ -14,7 +14,8 @@ import type { ImplementationReview } from '@/lib/orgReview';
 import type { CalculatorInputs, Period } from '@/lib/types';
 import {
   computeDloVolumeSignal, computeConfigFootprint, extractDigitalWalletRollup,
-  buildBasicHandoff, buildAdvancedHandoff, BASIC_HANDOFF_KEY, ADVANCED_HANDOFF_KEY,
+  buildBasicHandoff, buildAdvancedHandoff, buildFlexHandoff,
+  BASIC_HANDOFF_KEY, ADVANCED_HANDOFF_KEY, FLEX_HANDOFF_KEY,
   type PipelineBucket
 } from '@/lib/orgScanCreditEstimate';
 
@@ -194,6 +195,12 @@ export default function OrgScannerPage() {
     try { window.sessionStorage.setItem(ADVANCED_HANDOFF_KEY, JSON.stringify(handoff)); } catch { /* ignore */ }
     router.push('/credit-calculator/advanced');
   }
+  function goToFlexCredits() {
+    if (!dloSignal) return;
+    const handoff = buildFlexHandoff(dloSignal.totalRows, pipelinePeriod);
+    try { window.sessionStorage.setItem(FLEX_HANDOFF_KEY, JSON.stringify(handoff)); } catch { /* ignore */ }
+    router.push('/credit-calculator?mode=flex_credits');
+  }
 
   async function onSowPdfFile(e: React.ChangeEvent<HTMLInputElement>) {
     const f = e.target.files?.[0];
@@ -332,9 +339,13 @@ export default function OrgScannerPage() {
 
         {results ? (
           <div className="card p-5 mt-6">
-            <h2 className="text-sm font-bold text-slate-900">Estimated Credit Consumption</h2>
+            <div className="flex items-center gap-2 flex-wrap">
+              <h2 className="text-sm font-bold text-slate-900">Estimated Credit Consumption</h2>
+              <span className="chip text-[10px] font-semibold bg-slate-100 text-slate-600">Credit-Based Consumption model</span>
+            </div>
             <p className="text-xs text-slate-500 mt-1">
               Sized from what this scan actually found, not a guess - refine in the Credit Calculator once you confirm your real ingestion cadence.
+              The figure below uses the Credit-Based Consumption (Data Services Credits) model - use &quot;Refine in Flex Credits&quot; below if your org is on that newer billing model instead.
             </p>
 
             {walletRollup ? (
@@ -404,6 +415,7 @@ export default function OrgScannerPage() {
             </div>
 
             <div className="mt-4 flex flex-wrap gap-2 justify-end">
+              <button onClick={goToFlexCredits} className="btn-ghost text-sm py-1.5 px-3 border border-emerald-300 text-emerald-700 hover:bg-emerald-50">Refine in Flex Credits (New) &rarr;</button>
               <button onClick={goToBasicCalculator} className="btn-ghost text-sm py-1.5 px-3">Refine in Basic Calculator &rarr;</button>
               <button onClick={goToAdvancedCalculator} className="btn-primary text-sm py-1.5 px-3">Refine in Advanced Calculator &rarr;</button>
             </div>
