@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import Header from '@/components/Header';
 import CollapsibleSection from '@/components/CollapsibleSection';
 import ConnectionForm from '@/components/data-readiness/ConnectionForm';
+import OAuthConnectCard from '@/components/deployment/OAuthConnectCard';
 import { streamNdjson } from '@/lib/streamNdjson';
 import type { ConnectionInfo } from '@/lib/dataReadiness';
 import type { DeployableCategory } from '@/lib/deploymentPackage';
@@ -42,6 +43,8 @@ function ProgressPanel({ messages, active }: { messages: string[]; active: boole
   );
 }
 
+const DEPLOYMENT_SESSION_KEY = 'sfdc.deploymentAssistant.session.v1';
+
 function downloadDataUri(name: string, uri: string) {
   const a = document.createElement('a');
   a.href = uri; a.download = name;
@@ -51,6 +54,25 @@ function downloadDataUri(name: string, uri: string) {
 export default function DeploymentAssistantPage() {
   const [sourceConnection, setSourceConnection] = useState<ConnectionInfo>({ connected: false });
   const [targetConnection, setTargetConnection] = useState<ConnectionInfo>({ connected: false });
+  const [oauthError, setOauthError] = useState<string | null>(null);
+  const [showPasswordFallback, setShowPasswordFallback] = useState(false);
+
+  // Picks up ?oauth_error=... or ?target_connected=1 after the OAuth redirect round-trip lands
+  // back here, then cleans the URL so a refresh doesn't re-show a stale error. Also checks
+  // target-connection status directly (rather than relying on ConnectionForm's own mount-time
+  // check) since ConnectionForm isn't always mounted here - it's hidden behind the OAuth card
+  // until connected, so something has to detect "already connected via OAuth" independently.
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const err = params.get('oauth_error');
+    if (err) setOauthError(err);
+    if (err || params.get('target_connected')) {
+      window.history.replaceState({}, '', window.location.pathname);
+    }
+    fetch('/api/deployment/target-connection').then((r) => r.json()).then((j) => {
+      if (j?.info?.connected) setTargetConnection(j.info);
+    }).catch(() => {});
+  }, []);
 
   const [discovering, setDiscovering] = useState(false);
   const [discoverMessages, setDiscoverMessages] = useState<string[]>([]);
@@ -64,6 +86,35 @@ export default function DeploymentAssistantPage() {
   const [packageXml, setPackageXml] = useState<string | null>(null);
   const [zipBase64, setZipBase64] = useState<string | null>(null);
   const [fileCount, setFileCount] = useState<number | null>(null);
+
+  // The OAuth "Connect Second Org" step is a full browser navigation away to Salesforce and
+  // back, which remounts this page and wipes plain React state - without this, a user who
+  // discovers/selects/packages components and THEN connects the target org via OAuth would lose
+  // all of that progress. Persisted to sessionStorage (not localStorage - this is throwaway
+  // in-progress state, not something to keep across browser sessions) and rehydrated on mount.
+  useEffect(() => {
+    try {
+      const raw = window.sessionStorage.getItem(DEPLOYMENT_SESSION_KEY);
+      if (!raw) return;
+      const saved = JSON.parse(raw);
+      if (saved.categories) setCategories(saved.categories);
+      if (saved.selectedEntries) {
+        setSelected(Object.fromEntries((saved.selectedEntries as [string, string[]][]).map(([k, v]) => [k, new Set(v)])));
+      }
+      if (saved.packageXml) setPackageXml(saved.packageXml);
+      if (saved.zipBase64) setZipBase64(saved.zipBase64);
+      if (typeof saved.fileCount === 'number') setFileCount(saved.fileCount);
+    } catch { /* malformed/absent - ignore */ }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  useEffect(() => {
+    try {
+      window.sessionStorage.setItem(DEPLOYMENT_SESSION_KEY, JSON.stringify({
+        categories, selectedEntries: Object.entries(selected).map(([k, v]) => [k, Array.from(v)]),
+        packageXml, zipBase64, fileCount
+      }));
+    } catch { /* storage unavailable/full - non-critical, just skip persistence */ }
+  }, [categories, selected, packageXml, zipBase64, fileCount]);
 
   const [validating, setValidating] = useState(false);
   const [validateMessages, setValidateMessages] = useState<string[]>([]);
@@ -268,9 +319,25 @@ export default function DeploymentAssistantPage() {
         ) : null}
 
         {packageXml && zipBase64 ? (
-          <div className="mb-6">
-            <ConnectionForm onConnected={setTargetConnection} apiEndpoint="/api/deployment/target-connection"
-              rememberKey="sfdc.targetConnection.remember.v1" title="Connect Target Org" />
+          <div className="mb-6 space-y-3">
+            {targetConnection.connected ? (
+              <ConnectionForm onConnected={setTargetConnection} apiEndpoint="/api/deployment/target-connection"
+                rememberKey="sfdc.targetConnection.remember.v1" title="Connect Target Org" />
+            ) : (
+              <>
+                <OAuthConnectCard oauthError={oauthError} />
+                <div className="text-center">
+                  <button type="button" onClick={() => setShowPasswordFallback((s) => !s)}
+                    className="text-xs text-slate-500 hover:text-slate-800 underline">
+                    {showPasswordFallback ? 'Hide' : 'Or connect with username & password instead'}
+                  </button>
+                </div>
+                {showPasswordFallback ? (
+                  <ConnectionForm onConnected={setTargetConnection} apiEndpoint="/api/deployment/target-connection"
+                    rememberKey="sfdc.targetConnection.remember.v1" title="Connect Target Org (Username & Password)" />
+                ) : null}
+              </>
+            )}
           </div>
         ) : null}
 

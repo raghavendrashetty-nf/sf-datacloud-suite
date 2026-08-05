@@ -8,10 +8,14 @@ import ResultsSummary from '@/components/ResultsSummary';
 import ItemCard from '@/components/ItemCard';
 import BackToTopButton from '@/components/BackToTopButton';
 import RateSheetManager from '@/components/RateSheetManager';
+import { FlexCreditsControls, FlexCreditsItemList, FlexCreditsSummary } from '@/components/FlexCreditsPanel';
 import { useRates } from '@/hooks/useRates';
 import { useCalculator } from '@/hooks/useCalculator';
+import { useFlexCredits } from '@/hooks/useFlexCredits';
 import { PHASES } from '@/components/PhaseTheme';
 import type { RateItem } from '@/lib/types';
+
+type PricingMode = 'credit_based' | 'flex_credits';
 
 function ChevronDown({ className = 'w-4 h-4' }: { className?: string }) {
   return (
@@ -28,6 +32,8 @@ export default function CreditCalculatorPage() {
     inputs, result, setEnvironment, setCost, setOverhead, setItemVolume, setItemInitial, setItemPeriod, reset,
     justPrefilled, dismissPrefillBanner
   } = useCalculator(rates);
+  const flex = useFlexCredits();
+  const [mode, setMode] = useState<PricingMode>('credit_based');
   const [rateManagerOpen, setRateManagerOpen] = useState(false);
   const chartsRef = useRef<HTMLDivElement>(null);
 
@@ -68,12 +74,28 @@ export default function CreditCalculatorPage() {
     setExpandedPhases(next);
   }
 
-  // A prefill from Org Scanner targets an ingestion-phase item - auto-expand that phase so it's
-  // actually visible on arrival instead of hidden behind the collapsed-by-default phase card.
+  // A prefill from Org Scanner's Credit-Based Consumption estimate - switch to that mode and
+  // auto-expand the ingestion phase so the prefilled item is actually visible on arrival, not
+  // hidden behind a collapsed phase card or the Flex Credits mode if that happened to be selected.
   useEffect(() => {
     if (!justPrefilled) return;
+    setMode('credit_based');
     setExpandedPhases((prev) => ({ ...prev, ingestion: true }));
   }, [justPrefilled]);
+
+  // A prefill from Org Scanner's Flex Credits estimate - switch to Flex Credits mode.
+  useEffect(() => {
+    if (!flex.justPrefilled) return;
+    setMode('flex_credits');
+  }, [flex.justPrefilled]);
+
+  // Deep link from the Advanced Calculator's "Try Flex Credits (New)" link (?mode=flex_credits).
+  // Read from window.location directly (client-only) rather than useSearchParams(), which would
+  // force this otherwise-static page to opt into a Suspense boundary just for this.
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('mode') === 'flex_credits') setMode('flex_credits');
+  }, []);
 
   return (
     <main className="min-h-screen">
@@ -85,21 +107,62 @@ export default function CreditCalculatorPage() {
             <span className="chip bg-sky-100 text-sky-700 font-semibold">Simple</span>
           </div>
           <p className="text-sm text-slate-600 mt-1">
-            Discovery-phase estimate based on the Salesforce Data Cloud Platform Services rate sheet.
+            Discovery-phase estimate - choose the billing model that matches your org&apos;s Salesforce contract.
           </p>
-          <p className="text-xs text-slate-500 mt-1">
-            Rate source: <a href={rates.meta.url} target="_blank" rel="noreferrer" className="underline">{rates.meta.source}</a>
-            {' · '}Need Refresh Mode &amp; Pipeline-level modeling?{' '}
-            <Link href="/credit-calculator/advanced" className="underline text-indigo-600 hover:text-indigo-800">Try the Advanced Calculator</Link>
-          </p>
-          {justPrefilled ? (
-            <div className="mt-3 flex items-start justify-between gap-3 rounded-lg border border-teal-200 bg-teal-50 px-3 py-2 text-xs text-teal-800">
-              <p>{justPrefilled.note}</p>
-              <button onClick={dismissPrefillBanner} className="text-teal-600 hover:text-teal-900 text-sm leading-none shrink-0" aria-label="Dismiss">×</button>
-            </div>
-          ) : null}
+
+          <div className="mt-3 flex rounded-lg border border-slate-300 overflow-hidden w-fit">
+            <button type="button" onClick={() => setMode('credit_based')}
+              className={`px-4 py-2 text-sm font-semibold ${mode === 'credit_based' ? 'bg-slate-900 text-white' : 'bg-white text-slate-600 hover:bg-slate-50'}`}>
+              Credit-Based Consumption
+            </button>
+            <button type="button" onClick={() => setMode('flex_credits')}
+              className={`px-4 py-2 text-sm font-semibold flex items-center gap-1.5 ${mode === 'flex_credits' ? 'bg-slate-900 text-white' : 'bg-white text-slate-600 hover:bg-slate-50'}`}>
+              Flex Credits <span className="chip text-[10px] font-bold bg-emerald-100 text-emerald-700">New</span>
+            </button>
+          </div>
+
+          {mode === 'credit_based' ? (
+            <>
+              <p className="text-xs text-slate-500 mt-2">
+                Rate source: <a href={rates.meta.url} target="_blank" rel="noreferrer" className="underline">{rates.meta.source}</a>
+                {' · '}Need Refresh Mode &amp; Pipeline-level modeling?{' '}
+                <Link href="/credit-calculator/advanced" className="underline text-indigo-600 hover:text-indigo-800">Try the Advanced Calculator</Link>
+              </p>
+              {justPrefilled ? (
+                <div className="mt-3 flex items-start justify-between gap-3 rounded-lg border border-teal-200 bg-teal-50 px-3 py-2 text-xs text-teal-800">
+                  <p>{justPrefilled.note}</p>
+                  <button onClick={dismissPrefillBanner} className="text-teal-600 hover:text-teal-900 text-sm leading-none shrink-0" aria-label="Dismiss">×</button>
+                </div>
+              ) : null}
+            </>
+          ) : (
+            <>
+              <p className="text-xs text-slate-500 mt-2">
+                Rate source: <a href={flex.rates.meta.url} target="_blank" rel="noreferrer" className="underline">{flex.rates.meta.source}</a>
+              </p>
+              {flex.justPrefilled ? (
+                <div className="mt-3 flex items-start justify-between gap-3 rounded-lg border border-teal-200 bg-teal-50 px-3 py-2 text-xs text-teal-800">
+                  <p>{flex.justPrefilled.note}</p>
+                  <button onClick={flex.dismissPrefillBanner} className="text-teal-600 hover:text-teal-900 text-sm leading-none shrink-0" aria-label="Dismiss">×</button>
+                </div>
+              ) : null}
+            </>
+          )}
         </div>
 
+        {mode === 'flex_credits' ? (
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
+            <div className="lg:col-span-2 lg:sticky lg:top-20 lg:self-start">
+              <FlexCreditsControls flex={flex} />
+            </div>
+            <div className="lg:col-span-7">
+              <FlexCreditsItemList flex={flex} />
+            </div>
+            <div className="lg:col-span-3 lg:sticky lg:top-20 lg:self-start lg:max-h-[calc(100vh-6rem)] lg:overflow-y-auto lg:pr-1 lg:z-30">
+              <FlexCreditsSummary flex={flex} />
+            </div>
+          </div>
+        ) : (
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
           <div className="lg:col-span-2 lg:sticky lg:top-20 lg:self-start">
             <CalculatorSidebar
@@ -161,6 +224,7 @@ export default function CreditCalculatorPage() {
         <ResultsSummary result={result} />
       </div>
         </div>
+        )}
       </div>
 
       {rateManagerOpen ? (

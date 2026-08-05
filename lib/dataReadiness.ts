@@ -19,6 +19,8 @@ export interface ConnectionInfo {
   organizationId?: string; organizationName?: string;
   instanceUrl?: string; isSandbox?: boolean;
   apiVersion?: string; connectedAt?: string;
+  authMethod?: 'password' | 'oauth';
+  hasRefreshToken?: boolean;
 }
 
 export interface CheckRequest { system: SystemKey; checkType: CheckKey; object: string; field: string; }
