@@ -16,9 +16,9 @@ function ChevronDown({ className = 'w-3.5 h-3.5' }: { className?: string }) {
 interface NavItem { href: string; label: string; }
 
 // Every currently-working feature, in the same order the homepage's Discovery -> Solution
-// Design -> Implementation Review pipeline presents them - Deployment Assistant is
-// intentionally excluded, it's still a roadmap placeholder (RoadmapFeaturePage), not a working
-// tool, per the "only working features" instruction.
+// Design -> Implementation Review pipeline presents them. Deployment Assistant, Saved
+// Connections, and Best Practices are real, working pages now (verified live against real
+// orgs this session) - no longer roadmap placeholders, so they're included here too.
 const CALCULATOR_ITEMS: NavItem[] = [
   { href: '/credit-calculator', label: 'Basic' },
   { href: '/credit-calculator/advanced', label: 'Advanced' }
@@ -26,7 +26,10 @@ const CALCULATOR_ITEMS: NavItem[] = [
 const SIMPLE_ITEMS: NavItem[] = [
   { href: '/data-readiness', label: 'Data Readiness' },
   { href: '/solution-recommender', label: 'Solution Recommender' },
-  { href: '/org-scanner', label: 'Org Scanner' }
+  { href: '/org-scanner', label: 'Org Scanner' },
+  { href: '/deployment-assistant', label: 'Deployment Assistant' },
+  { href: '/saved-connections', label: 'Saved Orgs' },
+  { href: '/best-practices', label: 'Best Practices' }
 ];
 
 function NavLink({ href, label, active }: NavItem & { active: boolean }) {

@@ -1,0 +1,46 @@
+{
+  "meta": {
+    "version": "1.0",
+    "lastUpdated": "2026-08-05"
+  },
+  "stages": [
+    { "key": "discovery", "order": 1, "label": "Discovery", "color": "sky" },
+    { "key": "solution_design", "order": 2, "label": "Solution Design", "color": "indigo" },
+    { "key": "implementation", "order": 3, "label": "Implementation", "color": "violet" },
+    { "key": "deployment", "order": 4, "label": "Deployment", "color": "rose" },
+    { "key": "operate_optimize", "order": 5, "label": "Operate & Optimize", "color": "emerald" }
+  ],
+  "practices": [
+    {
+      "id": "data360-credit-optimization-2026-03",
+      "stage": "operate_optimize",
+      "title": "Salesforce Data 360 Credit Optimization Guide",
+      "summary": "19 concrete techniques for cutting Data Cloud credit consumption across ingestion, transformation, identity resolution, segmentation, and activation - from defaulting to batch over streaming to Digital Wallet consumption alerts.",
+      "points": [
+        { "text": "Filter data upstream before ingestion - remove records with null values in critical fields (email, phone) and limit to active customers from the last 12-24 months rather than ingesting complete historical records.", "impact": "Saves 10-30% of ingestion credits" },
+        { "text": "Default to batch processing over streaming - streaming calculated insights cost up to 53x more than batch (800 vs. 15 credits per million rows). Reserve streaming exclusively for decisions requiring sub-15-minute latency like fraud detection or in-session personalization.", "impact": "Up to 53x cost difference" },
+        { "text": "Ingest only necessary fields - avoid bringing in all available columns; map activation use cases to specific required fields.", "impact": "Reduces 10%+ of total costs" },
+        { "text": "Optimize calculated insight refresh schedules - adjust frequency based on time sensitivity: hourly for real-time metrics, daily for routine decisions, weekly for static reports.", "impact": "Moving hourly to weekly saves ~99.4% of insight costs" },
+        { "text": "Deactivate unused segments and data streams - audit regularly and remove outdated segments, insights, and data flows that no longer deliver business value but continue consuming credits on scheduled refreshes." },
+        { "text": "Refine identity resolution match rules for precision - use exact matching criteria (exact email, exact phone) before fuzzy matching to prevent unifying unrelated records." },
+        { "text": "Monitor profile count growth continuously - track how new ingestions impact existing unified profile counts to detect overly broad matching rules or data quality issues creating unnecessary duplicates." },
+        { "text": "Design data models for consumption patterns, not storage - group related fields that will be accessed together into single data model objects to minimize join complexity.", "impact": "Reduces segmentation/activation costs by 20-40%" },
+        { "text": "Nest common segment filters - create base segments (e.g. high-value active customers) and build sub-segments that filter from it, avoiding reprocessing the full population for each variation." },
+        { "text": "Reduce segment refresh frequency - switching a 50-million-row segment from daily to weekly refresh has acceptable freshness for most campaigns.", "impact": "~25,700 credits saved monthly (50M-row example)" },
+        { "text": "Consolidate activation destinations - each destination incurs separate activation costs; consolidate multiple destinations where possible to avoid running redundant activation cycles." },
+        { "text": "Limit enrichment attributes in activations - include only attributes the destination system actually uses for personalization; additional attributes increase data traversal costs." },
+        { "text": "Monitor identity resolution costs via Digital Wallet - track IR credit consumption specifically to understand how unification decisions impact overall spending." },
+        { "text": "Use Digital Wallet consumption alerts - configure Flow-based threshold notifications at 25%, 50%, 75%, and 90% of allocated credits to prevent unexpected overspend." },
+        { "text": "Build custom consumption reports - analyze TenantEnrichedUsageEvent data to identify top-consuming data streams, transforms, and segments, and correlate credit spend with business value delivered." },
+        { "text": "Disable unnecessary data streams in sandbox environments - sandbox usage now consumes production credits; disable replicated data streams in sandboxes to prevent unintended credit drain." },
+        { "text": "Evaluate federation vs. ingestion based on access frequency - if accessing external data more than ~29 times, ingesting once becomes cheaper than federating each time.", "impact": "~2,000 credits (ingest once) vs. 70 credits/query (federation)" },
+        { "text": "Define high-impact use cases before ingesting data - lock in data classification decisions upfront; changing classifications later requires re-ingestion and re-transformation at full credit cost." },
+        { "text": "Use the Salesforce pricing calculator - model expected usage across all three pricing models (credit-based, profile-based SKUs, flex credits) before building to estimate total cost of ownership accurately." }
+      ],
+      "sourceUrl": "https://www.jitendrazaa.com/blog/salesforce/salesforce-data-360-credit-optimization-guide-march-2026/",
+      "sourceName": "Jitendra Zaa's Blog",
+      "publishDate": "2026-03",
+      "addedDate": "2026-08-05"
+    }
+  ]
+}

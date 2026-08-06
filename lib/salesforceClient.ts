@@ -35,7 +35,9 @@ function domainToLoginUrl(domain: string): string {
 
 // ---------------- Connection ----------------
 
-export async function setConnection(config: SFConnectionConfig): Promise<ConnectionInfo> {
+// Shared SOAP login + org/user lookup - setConnection and setTargetConnection were previously
+// near-identical copies of this differing only in which cache slot they wrote to.
+async function loginWithConfig(config: SFConnectionConfig): Promise<{ conn: any; info: ConnectionInfo }> {
   const jsforce: any = await import('jsforce');
   const Connection = jsforce.Connection ?? jsforce.default?.Connection;
   const conn = new Connection({ loginUrl: domainToLoginUrl(config.domain), instanceUrl: config.instanceUrl, version: '59.0' });
@@ -58,8 +60,13 @@ export async function setConnection(config: SFConnectionConfig): Promise<Connect
     connected: true, username: config.username, displayName,
     organizationId: userInfo.organizationId, organizationName,
     instanceUrl: conn.instanceUrl, isSandbox, apiVersion: conn.version,
-    connectedAt: new Date().toISOString()
+    connectedAt: new Date().toISOString(), authMethod: 'password'
   };
+  return { conn, info };
+}
+
+export async function setConnection(config: SFConnectionConfig): Promise<ConnectionInfo> {
+  const { conn, info } = await loginWithConfig(config);
   cache.conn = conn; cache.info = info; cache.config = config;
   cache.objectListCache = null; cache.fieldsCache = {};
   return info;
@@ -88,41 +95,30 @@ export function getActiveConnection(): any {
 // ---------------- Target org connection (deployment only) ----------------
 
 export async function setTargetConnection(config: SFConnectionConfig): Promise<ConnectionInfo> {
-  const jsforce: any = await import('jsforce');
-  const Connection = jsforce.Connection ?? jsforce.default?.Connection;
-  const conn = new Connection({ loginUrl: domainToLoginUrl(config.domain), instanceUrl: config.instanceUrl, version: '59.0' });
-  const password = (config.password || '') + (config.securityToken || '');
-  const userInfo = await conn.login(config.username, password);
-
-  let organizationName = '', isSandbox = false;
-  try {
-    const org = await conn.query('SELECT Id, Name, IsSandbox FROM Organization LIMIT 1');
-    if (org.records?.[0]) { organizationName = org.records[0].Name || ''; isSandbox = !!org.records[0].IsSandbox; }
-  } catch {}
-  let displayName = '';
-  try {
-    const u = await conn.query(`SELECT Name FROM User WHERE Id = '${userInfo.id}' LIMIT 1`);
-    if (u.records?.[0]) displayName = u.records[0].Name || '';
-  } catch {}
-
-  const info: ConnectionInfo = {
-    connected: true, username: config.username, displayName,
-    organizationId: userInfo.organizationId, organizationName,
-    instanceUrl: conn.instanceUrl, isSandbox, apiVersion: conn.version,
-    connectedAt: new Date().toISOString(), authMethod: 'password'
-  };
+  const { conn, info } = await loginWithConfig(config);
   cache.targetConn = conn; cache.targetInfo = info;
   return info;
 }
 
-// Builds the target connection from a real OAuth 2.0 token response (Web Server / Authorization
-// Code flow) instead of a username/password - the connection carries the refresh token and the
-// same OAuth2 client config, so jsforce can silently refresh the access token itself on expiry.
-// The refresh token lives only in this server-memory cache (same as every other credential in
-// this app) - it is never written to disk, and does not survive a server restart.
-export async function setTargetConnectionFromOAuth(oauth2: any, tokenResponse: {
+// Slot-generic version of the two functions above, backing the unified Saved Connections
+// feature (a saved profile can be reused as either the primary connection - Org Scanner, Data
+// Readiness, Solution Recommender, and Deployment's source org all share this one slot - or the
+// deployment target). Kept separate from setConnection/setTargetConnection (rather than replacing
+// them) so every existing call site keeps working unchanged.
+export type ConnectionSlot = 'primary' | 'target';
+export async function setConnectionInSlot(config: SFConnectionConfig, slot: ConnectionSlot): Promise<ConnectionInfo> {
+  return slot === 'primary' ? setConnection(config) : setTargetConnection(config);
+}
+
+// Builds a connection from a real OAuth 2.0 token response (Web Server/redirect flow, username-
+// password grant, or a refresh-token reconnect - all three produce this same shape) instead of a
+// username/password - the connection carries the refresh token and the same OAuth2 client
+// config, so jsforce can silently refresh the access token itself on expiry. The refresh token
+// lives only in this server-memory cache (same as every other credential in this app) - it is
+// never written to disk, and does not survive a server restart.
+export async function setConnectionFromOAuthInSlot(oauth2: any, tokenResponse: {
   access_token: string; refresh_token?: string; instance_url: string; id: string;
-}): Promise<ConnectionInfo> {
+}, slot: ConnectionSlot): Promise<ConnectionInfo> {
   const jsforce: any = await import('jsforce');
   const Connection = jsforce.Connection ?? jsforce.default?.Connection;
   const conn = new Connection({
@@ -148,8 +144,21 @@ export async function setTargetConnectionFromOAuth(oauth2: any, tokenResponse: {
     instanceUrl: conn.instanceUrl, isSandbox, apiVersion: conn.version,
     connectedAt: new Date().toISOString(), authMethod: 'oauth', hasRefreshToken: !!tokenResponse.refresh_token
   };
-  cache.targetConn = conn; cache.targetInfo = info;
+  if (slot === 'primary') {
+    cache.conn = conn; cache.info = info; cache.config = null;
+    cache.objectListCache = null; cache.fieldsCache = {};
+  } else {
+    cache.targetConn = conn; cache.targetInfo = info;
+  }
   return info;
+}
+
+// Kept for existing call sites (OAuth Redirect flow's authorize/callback routes, which only ever
+// target deployment's target org slot).
+export async function setTargetConnectionFromOAuth(oauth2: any, tokenResponse: {
+  access_token: string; refresh_token?: string; instance_url: string; id: string;
+}): Promise<ConnectionInfo> {
+  return setConnectionFromOAuthInSlot(oauth2, tokenResponse, 'target');
 }
 
 export function getTargetConnectionInfo(): ConnectionInfo {

@@ -163,7 +163,19 @@ export interface DiscoveredMetadataType {
 // API version and would just throw INVALID_TYPE faults), ask the Metadata API to describe
 // itself - conn.metadata.describe() returns every valid type name for this org - then filter
 // for anything that looks Data Cloud-related. This makes the scan self-adapting.
-const DATA_CLOUD_KEYWORD_RE = /data.?(lake|model|stream|space|transform|kit)|calc.*insight|identity.*resolution|segment|activation|ssot|cdp/i;
+// mktdatatranobject is listed explicitly (rather than folded into the "data.?(...)" group) since
+// its real Metadata API xmlName - MktDataTranObject, confirmed via Salesforce's own Metadata API
+// Developer Guide reference page for that type - has "Tran" (transport), not one of lake/model/
+// stream/etc, between "Data" and "Object", so the existing pattern never matched it. This is the
+// Metadata API type for a Data Lake Object (DLO); DataStreamDefinition deploys reference one by
+// DeveloperName and fail with "no MktDataTranObject named X found" if it isn't deployed first -
+// confirmed live against a real org, not assumed.
+// The remaining explicit names are Data Kit-related types confirmed via Salesforce's official
+// "Data 360 Metadata Types" Metadata API reference page - none contain "data" immediately
+// followed by lake/model/stream/space/transform/kit (e.g. "DataPackageKitDefinition" has
+// "Package" between "Data" and "Kit"; "FieldSrcTrgtRelationship"/"ObjectSourceTargetMap" don't
+// contain "data" at all), so the existing pattern would silently skip them without this.
+const DATA_CLOUD_KEYWORD_RE = /data.?(lake|model|stream|space|transform|kit)|calc.*insight|identity.*resolution|segment|activation|ssot|cdp|mktdatatranobject|internaldataconnector|datapackagekit|datakitobjectdependency|dataobjectbuildorgtemplate|datasourcebundledefinition|fieldsrctrgtrelationship|objectsourcetargetmap/i;
 
 async function discoverDataCloudMetadataTypes(onProgress?: ScanProgress): Promise<DiscoveredMetadataType[]> {
   const conn = getActiveConnection();
@@ -240,13 +252,28 @@ interface InternalScanResult extends ScanCategoryResult { order: number; }
 // (self-adapting), just grouped at the end under its raw type name.
 const CATEGORY_META: Record<string, { label: string; order: number }> = {
   // Ingestion
+  InternalDataConnector: { label: 'Data Connectors (internal-use-only type)', order: 8 },
+  MktDataTranObject: { label: 'Data Lake Objects (Metadata API)', order: 9 },
   DataStreamDefinition: { label: 'Data Streams', order: 10 },
   DataStreamTemplate: { label: 'Data Stream Templates', order: 11 },
+  // Data Kits - Salesforce's own recommended mechanism for moving a Data Stream + its full
+  // dependency chain (DLO, connector, mappings) as one atomic bundle, specifically because
+  // deploying DataStreamDefinition/MktDataTranObject one-by-one hits exactly the cascading
+  // "no X named Y found" dependency errors seen live against a real org. A Data Kit must already
+  // exist (authored via Data Cloud Setup's Data Kit Studio UI - confirmed no API/CLI can create
+  // one from scratch), but once it does, these types deploy through this same Metadata API path.
+  DataPackageKitDefinition: { label: 'Data Kits', order: 11.1 },
+  DataPackageKitObject: { label: 'Data Kit Content Objects', order: 11.2 },
   DataKitObjectTemplate: { label: 'Data Kit Object Templates', order: 12 },
+  DataKitObjectDependency: { label: 'Data Kit Object Dependencies', order: 12.1 },
+  DataObjectBuildOrgTemplate: { label: 'Data Kit Build Templates', order: 12.2 },
+  DataSourceBundleDefinition: { label: 'Data Kit Stream Bundles', order: 12.3 },
   __dll: { label: 'Data Lake Objects (DLOs)', order: 13 },
   MktDatalakeSrcKeyQualifier: { label: 'Data Lake Source Key Qualifiers', order: 14 },
   OmniDataTransform: { label: 'Data Transforms', order: 15 },
   DataSrcDataModelFieldMap: { label: 'Source-to-DMO Field Mappings', order: 16 },
+  FieldSrcTrgtRelationship: { label: 'Field Source-Target Relationships (DMO)', order: 16.1 },
+  ObjectSourceTargetMap: { label: 'Object Source-Target Mappings', order: 16.2 },
   // Harmonize & Unify
   __dlm: { label: 'Data Model Objects (DMOs)', order: 20 },
   identityResolution: { label: 'Identity Resolution Rulesets', order: 21 },
@@ -359,25 +386,67 @@ export async function runOrgScan(onProgress?: ScanProgress): Promise<ScanCategor
 // confirmed there are marked supported=true; everything else discovered is shown for visibility
 // but marked unsupported with a reason, rather than guessing it will deploy correctly.
 const PACKAGING_SUPPORT: Record<string, { order: number; supported: boolean; reason?: string }> = {
+  // Must be selected/deployed before DataStreamDefinition - see DATA_CLOUD_KEYWORD_RE comment.
+  MktDataTranObject: { order: 9, supported: true },
   DataStreamDefinition: { order: 10, supported: true },
   DataStreamTemplate: { order: 11, supported: true },
+  // Data Kit types - Salesforce's recommended bundle-based alternative for migrating a Data
+  // Stream + its full dependency chain atomically. Only useful if a Data Kit already wraps the
+  // components (authored via Data Cloud Setup's Data Kit Studio - no API creates one from
+  // scratch); confirmed real via Salesforce's Data 360 Metadata Types reference page.
+  DataPackageKitDefinition: { order: 11.1, supported: true },
+  DataPackageKitObject: { order: 11.2, supported: true },
   DataKitObjectTemplate: { order: 12, supported: true },
+  DataKitObjectDependency: { order: 12.1, supported: true },
+  DataObjectBuildOrgTemplate: { order: 12.2, supported: true },
+  DataSourceBundleDefinition: { order: 12.3, supported: true },
   DataSrcDataModelFieldMap: { order: 16, supported: true },
+  FieldSrcTrgtRelationship: { order: 16.1, supported: true },
+  ObjectSourceTargetMap: { order: 16.2, supported: true },
   MktCalcInsightObjectDef: { order: 30, supported: true },
-  MarketSegmentDefinition: { order: 41, supported: true },
+  // Confirmed live, twice, with two different real segments: retrieve() never populates the
+  // required includeCriteria field (the returned marketSegmentDefinition XML only ever has
+  // masterLabel/segmentOn/segmentType), yet deploy() rejects it with "Provide a valid
+  // IncludeCriteria value" every time - a genuine Metadata API round-trip gap for this type, not
+  // something this app's retrieve call can work around, since the data it needs was never in the
+  // response to begin with.
+  MarketSegmentDefinition: { order: 41, supported: false, reason: 'Confirmed live: retrieve() never includes the required includeCriteria field, so deploy() always rejects it with "Provide a valid IncludeCriteria value" - a genuine Metadata API gap for this type, not fixable from this app.' },
   ActivationPlatform: { order: 42, supported: true },
   MktDatalakeSrcKeyQualifier: { order: 14, supported: false, reason: 'Not confirmed as an independently deployable Metadata API type in Salesforce\'s Data 360 Metadata Types reference - shown for visibility only.' },
   OmniDataTransform: { order: 15, supported: false, reason: 'Not confirmed as an independently deployable Metadata API type in Salesforce\'s Data 360 Metadata Types reference - shown for visibility only.' },
   DataCalcInsightTemplate: { order: 31, supported: false, reason: 'Not confirmed as an independently deployable Metadata API type in Salesforce\'s Data 360 Metadata Types reference - shown for visibility only.' },
   ActivationPlatformField: { order: 43, supported: false, reason: 'Child of Activation Platform - deploys as part of its parent, not independently selectable.' },
-  ActivationPlatformActvAttr: { order: 44, supported: false, reason: 'Child of Activation Platform - deploys as part of its parent, not independently selectable.' }
+  ActivationPlatformActvAttr: { order: 44, supported: false, reason: 'Child of Activation Platform - deploys as part of its parent, not independently selectable.' },
+  // Confirmed via Salesforce's own Metadata API reference page for this exact type: "For internal
+  // use only." Real (it can appear in metadata.describe()), but not something Salesforce supports
+  // customers deploying via package.xml - this is what backs a File Upload (or similar) Data
+  // Stream's connector, and is why deploying a File-Upload-sourced Data Stream fails looking for
+  // it in the target org. The connector has to be manually recreated there first - a genuine
+  // platform limitation (confirmed live), not a gap in this tool.
+  InternalDataConnector: { order: 8, supported: false, reason: 'Salesforce\'s own Metadata API reference marks this type "For internal use only" - it backs Data Stream connectors (e.g. File Upload) but isn\'t deployable via package.xml. Recreate the connector manually in the target org first, under the same name, then it will already exist when the Data Stream deploys.' }
 };
+
+// Data Model Objects (DMOs, __dlm-suffixed) are deployable via the standard, universal
+// CustomObject Metadata API type - confirmed live: a Data Kit deploy failed looking for "no
+// CustomObject named X__dlm found" until the matching CustomObject was included, and once
+// added it (and its fields) deployed successfully. However conn.metadata.list([{type:
+// 'CustomObject'}]) does NOT enumerate them at all (confirmed live: 1408 CustomObject entries
+// returned for a real org, zero ending in __dlm) - DMOs are apparently excluded from that
+// listMetadata() enumeration even though retrieve()/deploy() accept them fine when named
+// explicitly. So the list of names has to come from the SSOT REST API instead (the same
+// fetchDataModelObjects() the Org Scanner already uses) - confirmed its `name` field is exactly
+// the __dlm-suffixed API name deploy() expects, e.g. "ConfluenceAPI_ConfluencePage_15CB073__dlm".
+async function fetchDlmCustomObjects(onProgress?: ScanProgress): Promise<DataCloudMetadataItem[]> {
+  const dmos = await fetchDataModelObjects(onProgress);
+  return dmos.map((o) => ({ name: o.name, displayName: o.displayName }));
+}
 
 // Lists every Metadata-API-discovered Data Cloud component (the same discovery already used by
 // the Org Scanner), annotated with real support-for-packaging status. Deliberately does NOT
-// include DMOs/DLOs/Segments/Identity Resolution fetched via the separate SSOT REST API earlier
+// include DLOs/Segments/Identity Resolution fetched via the separate SSOT REST API earlier
 // in this file - those were never confirmed as the same deployable surface, so they're excluded
-// here rather than guessed at.
+// here rather than guessed at. DMOs are the one exception - added below via the real CustomObject
+// type, once confirmed deployable that way (see fetchDlmCustomObjects).
 export async function listDeployableComponents(onProgress?: ScanProgress): Promise<DeployableCategory[]> {
   const discovered = await discoverDataCloudMetadataTypes(onProgress);
   const topLevel = discovered.filter((d) => !d.parentXmlName && PACKAGING_SUPPORT[d.xmlName]);
@@ -406,7 +475,138 @@ export async function listDeployableComponents(onProgress?: ScanProgress): Promi
       items: r.value.map((it) => ({ fullName: it.name, label: (it.displayName as string) || it.name }))
     });
   });
+
+  try {
+    const dlmItems = await fetchDlmCustomObjects(onProgress);
+    onProgress?.(`✓ Data Model Objects (Metadata API) (${dlmItems.length.toLocaleString()})`);
+    results.push({
+      xmlName: 'CustomObject',
+      category: 'Data Model Objects (Metadata API)',
+      order: 20,
+      supported: true,
+      items: dlmItems.map((it) => ({ fullName: it.name, label: it.displayName || it.name }))
+    });
+  } catch (e) {
+    onProgress?.(`Data Model Objects (Metadata API): failed to list - ${e instanceof Error ? e.message : String(e)}`);
+  }
+
   return results.sort((a, b) => a.order - b.order);
+}
+
+// ==================== Deploy via Data Kit ====================
+// A Data Kit (DataPackageKitDefinition) must already be authored by hand in Data Cloud Setup's
+// Data Kit Studio UI - confirmed via Salesforce's own CLI deployment guide, there is no API to
+// create one or add a component to one from scratch. What IS a real, documented API is fetching
+// the already-computed manifest for an EXISTING Data Kit (Data 360 Connect REST API's "Data Kits"
+// endpoint, referenced directly from Salesforce's official CLI deploy guide), which avoids ever
+// having to reverse-engineer DataKitObjectTemplate's internal entityPayload format ourselves.
+
+export interface DataKitSummary { name: string; label: string; description?: string }
+
+// Lists Data Kits already authored in the connected org via the standard Metadata API list()/
+// read() calls - same mechanism used for every other component type in this file, just for the
+// DataPackageKitDefinition type specifically.
+export async function listDataKits(onProgress?: ScanProgress): Promise<DataKitSummary[]> {
+  const conn = getActiveConnection();
+  onProgress?.('Listing Data Kits...');
+  const listed = await conn.metadata.list([{ type: 'DataPackageKitDefinition' }]);
+  const arr: any[] = Array.isArray(listed) ? listed : listed ? [listed] : [];
+  if (arr.length === 0) return [];
+
+  const fullNames = arr.map((f) => f.fullName).filter(Boolean);
+  const batches: string[][] = [];
+  for (let i = 0; i < fullNames.length; i += 10) batches.push(fullNames.slice(i, i + 10));
+  const settled = await Promise.allSettled(batches.map((b) => conn.metadata.read('DataPackageKitDefinition', b)));
+  const detailByName = new Map<string, any>();
+  for (const r of settled) {
+    if (r.status !== 'fulfilled') continue;
+    const readArr: any[] = Array.isArray(r.value) ? r.value : r.value ? [r.value] : [];
+    for (const rec of readArr) if (rec?.fullName) detailByName.set(rec.fullName, rec);
+  }
+  onProgress?.(`✓ Found ${arr.length} Data Kit(s).`);
+  return arr.map((f) => {
+    const detail = detailByName.get(f.fullName) ?? {};
+    return { name: f.fullName, label: detail.masterLabel || f.fullName, description: detail.description };
+  });
+}
+
+// Extracts {xmlName, members}[] from a parsed package.xml-shaped object, however it got there -
+// tolerates both the raw <Package><types>... XML shape (via xml2js) and a plain JS object with
+// the same field names, since which one the manifest endpoint actually returns wasn't confirmed
+// from docs alone (the Connect API reference page is a JS-rendered spec viewer that couldn't be
+// fetched as static content).
+function extractSelectionsFromPackageLike(pkg: any): PackageComponentSelection[] {
+  const types = pkg?.types;
+  const typesArr: any[] = Array.isArray(types) ? types : types ? [types] : [];
+  return typesArr
+    .map((t: any) => ({
+      xmlName: Array.isArray(t?.name) ? t.name[0] : t?.name,
+      members: (Array.isArray(t?.members) ? t.members : t?.members ? [t.members] : []).map((m: any) => String(m))
+    }))
+    .filter((s: PackageComponentSelection) => !!s.xmlName && s.members.length > 0);
+}
+
+// Fetches the real, Salesforce-computed manifest for a single Data Kit - GET /services/data/
+// v{version}/ssot/datakit/{dataKitDevName}/manifest, a documented Data 360 Connect REST API
+// endpoint (confirmed via Salesforce's official "Use CLI to Deploy Changes from a Sandbox to
+// Data 360" guide, which links directly to this endpoint's Connect API spec entry as the
+// programmatic alternative to clicking "Download Manifest" in the Data Kit Studio UI). Salesforce
+// computes the kit's full component membership server-side, so this code never has to guess at
+// cross-references between the six Data Kit metadata types.
+//
+// The response's exact body shape (raw package.xml text vs. a JSON envelope) could not be
+// confirmed from docs alone - the Connect API reference is a JS-rendered spec viewer this app
+// can't statically fetch. Handled defensively: detect XML vs JSON from the first non-whitespace
+// character, try the plausible JSON shapes (a top-level {types:[...]} object, or a nested
+// {manifest: "<Package>...</Package>"} string), and if truly unrecognized, surface the raw body
+// in the thrown error (which flows into this app's downloadable deploy log) rather than silently
+// guessing further.
+export async function getDataKitManifestSelections(dataKitDevName: string, onProgress?: ScanProgress): Promise<PackageComponentSelection[]> {
+  const conn = getActiveConnection();
+  onProgress?.(`Fetching manifest for Data Kit "${dataKitDevName}"...`);
+  const url = `${conn.instanceUrl}/services/data/${SSOT_API_VERSION}/ssot/datakit/${encodeURIComponent(dataKitDevName)}/manifest`;
+  // Confirmed live (twice): this endpoint only returns Data Cloud's own internal
+  // {dataKitMembers: [...]} member-listing JSON, never a package.xml manifest - asking for XML
+  // via Accept was tried and rejected outright with HTTP 406 NOT_ACCEPTABLE, so this genuinely
+  // is the only format available, not something content negotiation can change.
+  const resp = await fetch(url, { headers: { Authorization: `Bearer ${conn.accessToken}` } });
+  const bodyText = await resp.text();
+  if (!resp.ok) {
+    throw new Error(`Failed to fetch Data Kit manifest (HTTP ${resp.status}): ${bodyText.slice(0, 500)}`);
+  }
+
+  const xml2js = await import('xml2js');
+  const trimmed = bodyText.trim();
+  let selections: PackageComponentSelection[] = [];
+
+  if (trimmed.startsWith('<')) {
+    const parsed = await xml2js.parseStringPromise(trimmed, { explicitArray: true });
+    selections = extractSelectionsFromPackageLike(parsed?.Package);
+  } else if (trimmed.startsWith('{') || trimmed.startsWith('[')) {
+    const json = JSON.parse(trimmed);
+    const obj = Array.isArray(json) ? json[0] : json;
+    if (typeof obj?.manifest === 'string') {
+      const parsed = await xml2js.parseStringPromise(obj.manifest, { explicitArray: true });
+      selections = extractSelectionsFromPackageLike(parsed?.Package);
+    } else if (obj?.Package) {
+      selections = extractSelectionsFromPackageLike(obj.Package);
+    } else if (Array.isArray(obj?.types)) {
+      selections = extractSelectionsFromPackageLike(obj);
+    } else if (Array.isArray(obj?.dataKitMembers)) {
+      throw new Error('This endpoint returned Data Cloud\'s internal "dataKitMembers" member-listing format (confirmed live), not a package.xml manifest as expected - there is no documented, safe way to convert that format into deployable Metadata API component names, so this can\'t be automated without risking an incorrect deploy. Use "Select Individual Components" instead for this Data Stream and its dependencies.');
+    } else {
+      throw new Error(`Data Kit manifest response had an unrecognized JSON shape (no "manifest", "Package", "types", or "dataKitMembers" field) - raw body: ${trimmed.slice(0, 800)}`);
+    }
+  } else {
+    throw new Error(`Data Kit manifest response was neither XML nor JSON - raw body: ${trimmed.slice(0, 500)}`);
+  }
+
+  if (selections.length === 0) {
+    throw new Error(`Data Kit manifest parsed but yielded no usable component types - raw body: ${trimmed.slice(0, 800)}`);
+  }
+  const totalMembers = selections.reduce((sum, s) => sum + s.members.length, 0);
+  onProgress?.(`✓ Manifest resolved - ${selections.length} component type(s), ${totalMembers} member(s) total.`);
+  return selections;
 }
 
 export interface RetrievedPackage { zipBase64: string; fileCount: number; }
@@ -422,6 +622,12 @@ export async function retrieveMetadataPackage(
   onProgress?.('Requesting metadata retrieval from Salesforce...');
   const locator = conn.metadata.retrieve({
     apiVersion,
+    // singlePackage: true here must match deployMetadataPackage()'s singlePackage: true below -
+    // it controls whether the returned zip has package.xml at the root (true) or wrapped in a
+    // per-package subfolder like "unpackaged/" (false, the API default). Without this, retrieve()
+    // returns a wrapped zip while deploy() expects a flat one, so Salesforce rejects the deploy
+    // with "No package.xml found" even though the zip clearly contains one.
+    singlePackage: true,
     unpackaged: { types: selections.filter((s) => s.members.length > 0).map((s) => ({ members: s.members, name: s.xmlName })), version: apiVersion }
   });
   const kicked = await locator;
@@ -450,11 +656,27 @@ export function generatePackageXml(selections: PackageComponentSelection[], apiV
   return buildPackageXml(selections, apiVersion);
 }
 
+export interface DeployComponentFailure {
+  fullName: string; componentType?: string; problemType?: string; problem?: string;
+  fileName?: string; lineNumber?: number; columnNumber?: number;
+}
 export interface DeployOutcome {
   id: string; done: boolean; success: boolean; status: string;
   numberComponentsDeployed: number; numberComponentsTotal: number; numberComponentErrors: number;
   checkOnly: boolean; errorMessage?: string;
-  componentFailures: { fullName: string; componentType?: string; problem?: string }[];
+  componentFailures: DeployComponentFailure[];
+}
+
+// Salesforce's own DeployMessage schema (confirmed via jsforce's bundled Metadata API WSDL/type
+// defs) has more diagnostic fields than fullName/componentType/problem - fileName, problemType,
+// lineNumber, columnNumber - all useful for troubleshooting exactly which referenced dependency
+// is missing (e.g. "no MktDataTranObject named X found"), so all of them are kept rather than
+// discarded, for the downloadable deploy log.
+function mapComponentFailures(raw: any[]): DeployComponentFailure[] {
+  return (raw ?? []).map((f: any) => ({
+    fullName: f.fullName, componentType: f.componentType, problemType: f.problemType, problem: f.problem,
+    fileName: f.fileName, lineNumber: f.lineNumber, columnNumber: f.columnNumber
+  }));
 }
 
 // Deploys a retrieved zip into the TARGET org connection (never the source connection - the
@@ -466,7 +688,7 @@ export async function deployMetadataPackage(
 ): Promise<DeployOutcome> {
   onProgress?.(checkOnly ? 'Starting validation-only deploy (checkOnly - nothing will actually change)...' : 'Starting real deploy to target org...');
   const zipBuffer = Buffer.from(zipBase64, 'base64');
-  const locator = targetConn.metadata.deploy(zipBuffer, { checkOnly, rollbackOnError: true, singlePackage: true });
+  const locator = targetConn.metadata.deploy(zipBuffer, { checkOnly, rollbackOnError: true, singlePackage: true, testLevel: 'RunLocalTests' });
   const kicked = await locator;
   const asyncId: string = kicked.id;
   onProgress?.(`Deploy job started (id ${asyncId}) - polling for completion...`);
@@ -481,7 +703,7 @@ export async function deployMetadataPackage(
         numberComponentsDeployed: status.numberComponentsDeployed, numberComponentsTotal: status.numberComponentsTotal,
         numberComponentErrors: status.numberComponentErrors, checkOnly,
         errorMessage: status.errorMessage ?? undefined,
-        componentFailures: (status.details?.componentFailures ?? []).map((f: any) => ({ fullName: f.fullName, componentType: f.componentType, problem: f.problem }))
+        componentFailures: mapComponentFailures(status.details?.componentFailures)
       };
       onProgress?.(outcome.success
         ? `✓ ${checkOnly ? 'Validation' : 'Deploy'} succeeded - ${outcome.numberComponentsDeployed}/${outcome.numberComponentsTotal} component(s).`
@@ -494,33 +716,3 @@ export async function deployMetadataPackage(
   throw new Error('Deploy timed out after 4 minutes of polling.');
 }
 
-// Deploys a previously-validated (checkOnly) deploy for real, without re-uploading the zip -
-// this is jsforce's deployRecentValidation(), which wraps Salesforce's real "deploy a recently
-// validated request" mechanism (the documented safe path: validate first, then commit).
-export async function deployRecentValidation(targetConn: any, validatedDeployId: string, onProgress?: ScanProgress): Promise<DeployOutcome> {
-  onProgress?.(`Deploying previously-validated request (id ${validatedDeployId}) for real...`);
-  const asyncId: string = await targetConn.metadata.deployRecentValidation({ id: validatedDeployId });
-  onProgress?.(`Deploy job started (id ${asyncId}) - polling for completion...`);
-
-  let attempts = 0;
-  while (attempts < 120) {
-    attempts++;
-    const status = await targetConn.metadata.checkDeployStatus(asyncId, true);
-    if (status.done) {
-      const outcome: DeployOutcome = {
-        id: asyncId, done: true, success: status.success, status: status.status,
-        numberComponentsDeployed: status.numberComponentsDeployed, numberComponentsTotal: status.numberComponentsTotal,
-        numberComponentErrors: status.numberComponentErrors, checkOnly: false,
-        errorMessage: status.errorMessage ?? undefined,
-        componentFailures: (status.details?.componentFailures ?? []).map((f: any) => ({ fullName: f.fullName, componentType: f.componentType, problem: f.problem }))
-      };
-      onProgress?.(outcome.success
-        ? `✓ Deploy succeeded - ${outcome.numberComponentsDeployed}/${outcome.numberComponentsTotal} component(s).`
-        : `✗ Deploy failed - ${outcome.numberComponentErrors} error(s) of ${outcome.numberComponentsTotal} component(s).`);
-      return outcome;
-    }
-    onProgress?.(`Deploying... (status: ${status.status ?? 'InProgress'}, ${status.numberComponentsDeployed ?? 0}/${status.numberComponentsTotal ?? '?'} so far, check ${attempts})`);
-    await new Promise((resolve) => setTimeout(resolve, 2000));
-  }
-  throw new Error('Deploy timed out after 4 minutes of polling.');
-}

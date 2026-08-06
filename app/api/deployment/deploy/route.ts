@@ -1,18 +1,20 @@
 import { NextRequest } from 'next/server';
 import { getTargetConnectionInfo, getActiveTargetConnection } from '@/lib/salesforceClient';
-import { deployMetadataPackage, deployRecentValidation } from '@/lib/dataCloudClient';
+import { deployMetadataPackage } from '@/lib/dataCloudClient';
 import { ndjsonResponse } from '@/lib/ndjsonStream';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
-interface Body { zipBase64?: string; checkOnly?: boolean; validatedDeployId?: string; }
+interface Body { zipBase64?: string; checkOnly?: boolean; }
 
-// Deploys into the TARGET org - the one org-mutating operation in this feature. Two distinct
-// modes, both explicit (never inferred): checkOnly=true validates without changing anything
-// (the safe default this UI always runs first); passing validatedDeployId instead deploys a
-// previously-validated request for real via deployRecentValidation(), Salesforce's own
-// documented "validate then commit" path.
+// Deploys into the TARGET org - the one org-mutating operation in this feature. checkOnly=true
+// validates without changing anything (the safe default this UI always runs first); checkOnly=
+// false actually commits it, re-submitting the same zip fresh rather than reusing the validated
+// request ID - confirmed live that Salesforce's "quick deploy" shortcut for reusing a validated
+// ID (deployRecentValidation) fails with "Source validate did not run tests in the org" for this
+// app's Data-Cloud-only packages regardless of testLevel, while re-submitting the zip directly
+// works cleanly.
 export async function POST(req: NextRequest) {
   if (!getTargetConnectionInfo().connected) {
     return new Response(JSON.stringify({ error: 'Not connected to a target Salesforce org. Connect a target org first.' }), {
@@ -28,13 +30,6 @@ export async function POST(req: NextRequest) {
   }
 
   const targetConn = getActiveTargetConnection();
-
-  if (body.validatedDeployId) {
-    return ndjsonResponse(
-      (send) => deployRecentValidation(targetConn, body.validatedDeployId!, (message) => send({ type: 'progress', message })),
-      (outcome) => ({ type: 'done', outcome })
-    );
-  }
 
   if (!body.zipBase64) {
     return new Response(JSON.stringify({ error: 'Missing zipBase64 - create a package first.' }), { status: 400, headers: { 'Content-Type': 'application/json' } });
