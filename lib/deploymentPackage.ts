@@ -38,9 +38,12 @@ function escapeXml(s: string): string {
   return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&apos;');
 }
 
-// Salesforce's own documented dependency order for Data Cloud deployments (Data Streams -> DMOs
-// / mappings -> Calculated Insights -> Segments -> Activation Targets), per the Apex Hours /
-// official CLI deploy guide. Identity Resolution has no standalone Metadata API type (confirmed
-// via research) so it never appears here - it isn't independently packageable this way.
+// Salesforce's own documented dependency order for Data Cloud deployments (Data Lake Objects ->
+// Data Streams -> DMOs / mappings -> Calculated Insights -> Segments -> Activation Targets), per
+// the Apex Hours / official CLI deploy guide. Data Lake Objects (MktDataTranObject) come first -
+// confirmed live: deploying a Data Stream that references one which doesn't yet exist in the
+// target org fails with "no MktDataTranObject named X found", since the Data Stream only stores
+// a reference to it, not a copy. Identity Resolution has no standalone Metadata API type
+// (confirmed via research) so it never appears here - it isn't independently packageable this way.
 export const DEPLOYMENT_ORDER_NOTE =
-  'Deployment order follows Salesforce\'s documented Data Cloud dependency chain: Data Streams -> Source-to-DMO Field Mappings -> Calculated Insights -> Segment Definitions -> Activation Platforms. Components are listed in that order below.';
+  'Deployment order follows Salesforce\'s documented Data Cloud dependency chain: Data Lake Objects -> Data Streams -> Source-to-DMO Field Mappings -> Calculated Insights -> Segment Definitions -> Activation Platforms. Components are listed in that order below - selecting a Data Stream automatically selects its matching Data Lake Object too, so the deploy won\'t fail looking for it in the target org. A Data Stream\'s underlying connector (e.g. File Upload) is not deployable this way at all - Salesforce marks that type internal-use-only - so recreate the connector manually in the target org first, under the same name, before deploying the Data Stream. Data Kits (Data Cloud Setup -> Data Kit Studio) are Salesforce\'s own atomic-bundle mechanism, but this app currently cannot compute a deployable package from one via API - use this component-selection flow instead.';

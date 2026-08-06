@@ -8,6 +8,13 @@ interface Props {
   apiEndpoint?: string;
   rememberKey?: string;
   title?: string;
+  // Other connect modes for this same logical connection (e.g. the OAuth password/redirect
+  // cards) keep their own separate localStorage remember keys, since they're different
+  // components entirely. "Disconnect & forget" here is the one shared exit point once
+  // connected (this view renders regardless of which mode was actually used), so it clears
+  // those too - otherwise disconnecting wouldn't actually forget a connection remembered via
+  // one of the other modes.
+  additionalRememberKeys?: string[];
 }
 type DomainChoice = 'login' | 'test' | 'custom';
 
@@ -34,7 +41,8 @@ export default function ConnectionForm({
   onConnected,
   apiEndpoint = '/api/data-readiness/connection',
   rememberKey = 'sfdc.salesforceConnection.remember.v1',
-  title = 'Connect to Salesforce'
+  title = 'Connect to Salesforce',
+  additionalRememberKeys
 }: Props) {
   const [info, setInfo] = useState<ConnectionInfo>({ connected: false });
   const [loadingStatus, setLoadingStatus] = useState(true);
@@ -50,6 +58,16 @@ export default function ConnectionForm({
   const [showToken, setShowToken] = useState(false);
   const [connecting, setConnecting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // True if THIS component's own remember key has something, or any of the sibling connect
+  // modes' remember keys do (they use their own separate localStorage entries/shapes entirely -
+  // this only needs a presence check, not to parse them as this component's own creds shape).
+  function isAnyRemembered(): boolean {
+    if (readRemembered(rememberKey)) return true;
+    try {
+      return (additionalRememberKeys ?? []).some((k) => !!window.localStorage.getItem(k));
+    } catch { return false; }
+  }
 
   async function connectWithConfig(config: SFConnectionConfig, rememberThis: boolean): Promise<boolean> {
     setError(null);
@@ -75,7 +93,7 @@ export default function ConnectionForm({
 
   useEffect(() => {
     fetch(apiEndpoint).then((r) => r.json()).then(async (j) => {
-      if (j?.info?.connected) { setInfo(j.info); return; }
+      if (j?.info?.connected) { setInfo(j.info); onConnected?.(j.info); return; }
       const remembered = readRemembered(rememberKey);
       if (remembered) {
         setUsername(remembered.username); setSecurityToken(remembered.securityToken);
@@ -106,7 +124,12 @@ export default function ConnectionForm({
 
   async function disconnect() {
     setConnecting(true);
-    try { await fetch(apiEndpoint, { method: 'DELETE' }); clearRemembered(rememberKey); setInfo({ connected: false }); setRemember(false); }
+    try {
+      await fetch(apiEndpoint, { method: 'DELETE' });
+      clearRemembered(rememberKey);
+      for (const k of additionalRememberKeys ?? []) { try { window.localStorage.removeItem(k); } catch {} }
+      setInfo({ connected: false }); setRemember(false);
+    }
     finally { setConnecting(false); }
   }
 
@@ -140,7 +163,7 @@ export default function ConnectionForm({
                   Connected via OAuth{info.hasRefreshToken ? ' (refresh token saved)' : ''}
                 </span>
               ) : null}
-              {readRemembered(rememberKey) ? <span className="chip bg-slate-100 text-slate-600 font-semibold">Remembered on this device</span> : null}
+              {isAnyRemembered() ? <span className="chip bg-slate-100 text-slate-600 font-semibold">Remembered on this device</span> : null}
             </div>
             <dl className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-1.5 text-xs">
               {info.displayName ? <div><dt className="inline text-slate-500">User: </dt><dd className="inline font-semibold text-slate-900">{info.displayName}</dd></div> : null}
@@ -150,16 +173,7 @@ export default function ConnectionForm({
             </dl>
             <div className="mt-4 flex items-center gap-3">
               <button type="button" onClick={disconnect} disabled={connecting}
-                className="text-xs text-rose-600 hover:text-rose-800 underline disabled:opacity-60">Disconnect{readRemembered(rememberKey) ? ' & forget' : ''}</button>
-              {onConnected ? (
-                <button type="button" onClick={() => onConnected(info)}
-                  className="ml-auto inline-flex items-center gap-2 px-4 py-1.5 rounded-lg bg-gradient-to-br from-emerald-500 to-teal-500 text-white text-sm font-semibold shadow hover:shadow-md">
-                  Continue
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4">
-                    <line x1="5" y1="12" x2="19" y2="12" /><polyline points="12 5 19 12 12 19" />
-                  </svg>
-                </button>
-              ) : null}
+                className="text-xs text-rose-600 hover:text-rose-800 underline disabled:opacity-60">Disconnect{isAnyRemembered() ? ' & forget' : ''}</button>
             </div>
           </div>
         </div>
@@ -175,7 +189,10 @@ export default function ConnectionForm({
       </div>
       <div>
         <label className="block text-xs font-semibold text-slate-700 mb-1 uppercase tracking-wide">Username</label>
-        <input type="email" autoComplete="username" required value={username} onChange={(e) => setUsername(e.target.value)}
+        {/* type="text", not "email" - Salesforce usernames are email-SHAPED but many real ones
+            (esp. sandbox/trial-org auto-generated suffixes like ...com2026_07_30.demo) fail
+            strict browser email validation, which would silently block submission. */}
+        <input type="text" autoComplete="username" required value={username} onChange={(e) => setUsername(e.target.value)}
           placeholder="you@company.com.sandboxname"
           className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:border-emerald-400 focus:ring-2 focus:ring-emerald-200 outline-none" />
       </div>

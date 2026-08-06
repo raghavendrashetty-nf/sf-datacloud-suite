@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import Header from '@/components/Header';
 import CollapsibleSection from '@/components/CollapsibleSection';
 import ConnectionForm from '@/components/data-readiness/ConnectionForm';
+import SavedConnectionQuickConnect from '@/components/SavedConnectionQuickConnect';
 import { useSkills } from '@/hooks/useSkills';
 import { useRates } from '@/hooks/useRates';
 import { extractPdfText } from '@/lib/pdfParser';
@@ -263,6 +264,7 @@ export default function OrgScannerPage() {
         </div>
 
         <div className="mb-6">
+          {!connection.connected ? <SavedConnectionQuickConnect slot="primary" onConnected={setConnection} /> : null}
           <ConnectionForm onConnected={setConnection} />
         </div>
 
