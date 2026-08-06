@@ -3,6 +3,7 @@
 import { useMemo, useState } from 'react';
 import { PHASES, getPhaseTheme } from '@/components/PhaseTheme';
 import CollapsibleSection from '@/components/CollapsibleSection';
+import ExportFlexPDFButton from '@/components/ExportFlexPDFButton';
 import type { useFlexCredits } from '@/hooks/useFlexCredits';
 import type { FlexRateItem } from '@/lib/flexCreditsCalculator';
 import type { Period } from '@/lib/types';
@@ -32,7 +33,7 @@ function capitalize(s: string) { return s.charAt(0).toUpperCase() + s.slice(1); 
 // Left column - mirrors CalculatorSidebar's position/role for the Credit-Based Consumption mode
 // (environment + cost controls), plus the model-disambiguation warning specific to Flex Credits.
 export function FlexCreditsControls({ flex }: { flex: FlexCreditsState }) {
-  const { rates, environment, setEnvironment, costPerCreditUSD, setCostPerCreditUSD } = flex;
+  const { rates, environment, setEnvironment, costPerCreditUSD, setCostPerCreditUSD, inputs, result, reset } = flex;
   return (
     <div className="space-y-3">
       <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2.5 text-xs text-amber-800">
@@ -68,6 +69,15 @@ export function FlexCreditsControls({ flex }: { flex: FlexCreditsState }) {
         ) : (
           <p className="text-[11px] text-slate-500">Production usage is tiered by cumulative credits per calendar month (resets on the 1st). Whatever Input Unit you choose per item below is converted to a monthly-equivalent volume for tiering - see Example Breakdown on any item for the math.</p>
         )}
+      </div>
+
+      <div className="card p-3 space-y-2">
+        <h2 className="text-[11px] font-bold text-slate-900 uppercase tracking-wider">Export & Reset</h2>
+        <ExportFlexPDFButton rates={rates} inputs={inputs} result={result} />
+        <button type="button" onClick={reset}
+          className="w-full text-xs text-slate-500 hover:text-rose-600 underline underline-offset-2">
+          Reset all values
+        </button>
       </div>
     </div>
   );
@@ -107,10 +117,10 @@ function FlexItemCard({ item, flex }: { item: FlexRateItem; flex: FlexCreditsSta
 
       <div className="mt-2 rounded-lg border border-slate-200 p-2">
         <label className="block text-[11px] font-medium text-slate-700 mb-1">{primaryLabel}</label>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
           <input type="number" min={0} value={volumes[item.key] ?? ''} placeholder="0"
             onChange={(e) => setVolume(item.key, Number(e.target.value) || 0)}
-            className="flex-1 min-w-0 max-w-[15rem] border border-slate-300 rounded-lg px-2 py-1.5 text-sm" />
+            className="flex-1 min-w-[9rem] max-w-[15rem] border border-slate-300 rounded-lg px-2 py-1.5 text-sm" />
           <div className="ml-auto text-right shrink-0 text-sm">
             <span className="font-semibold tabular-nums text-slate-900">{fmt(perPeriodCredits, 2)} credits per {PERIOD_WORD[effectivePeriod]}</span>
             {perPeriodCostUSD != null ? <><span className="text-slate-400"> | </span><span className="text-slate-500 tabular-nums">{fmtUSD(perPeriodCostUSD)}</span></> : null}

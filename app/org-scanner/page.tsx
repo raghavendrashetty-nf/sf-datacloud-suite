@@ -14,7 +14,7 @@ import type { ConnectionInfo } from '@/lib/dataReadiness';
 import type { ImplementationReview } from '@/lib/orgReview';
 import type { CalculatorInputs, Period } from '@/lib/types';
 import {
-  computeDloVolumeSignal, computeConfigFootprint, extractDigitalWalletRollup,
+  computeDloVolumeSignal, computeConfigFootprint, extractSegmentVolumeSignal, extractDigitalWalletRollup,
   buildBasicHandoff, buildAdvancedHandoff, buildFlexHandoff,
   BASIC_HANDOFF_KEY, ADVANCED_HANDOFF_KEY, FLEX_HANDOFF_KEY,
   type PipelineBucket
@@ -31,6 +31,8 @@ interface ScanCategoryResult {
 type Stage = 'idle' | 'scanning' | 'done' | 'error';
 type ReviewMode = 'best_practices' | 'sow';
 type ReviewStage = 'idle' | 'extracting' | 'reviewing' | 'done' | 'error';
+
+const ORG_SCANNER_SESSION_KEY = 'sfdc.orgScanner.session.v1';
 
 const SEVERITY_STYLE: Record<string, string> = {
   high: 'border-rose-200 bg-rose-50 text-rose-700',
@@ -114,6 +116,34 @@ export default function OrgScannerPage() {
   const [reviewError, setReviewError] = useState<string | null>(null);
   const [review, setReview] = useState<ImplementationReview | null>(null);
 
+  // Navigating to a calculator via goToBasicCalculator/goToAdvancedCalculator/goToFlexCredits and
+  // back fully unmounts this page (Next.js App Router), which would otherwise lose the scan -
+  // forcing a re-scan just to try a second calculator against the same results. Persisted to
+  // sessionStorage (not localStorage - throwaway in-progress state, not something to keep across
+  // browser sessions) and rehydrated on mount, same pattern already used on Deployment Assistant.
+  useEffect(() => {
+    try {
+      const raw = window.sessionStorage.getItem(ORG_SCANNER_SESSION_KEY);
+      if (!raw) return;
+      const saved = JSON.parse(raw);
+      if (saved.results) { setResults(saved.results); setStage('done'); }
+      if (saved.pipelineBucket) setPipelineBucket(saved.pipelineBucket);
+      if (saved.pipelinePeriod) setPipelinePeriod(saved.pipelinePeriod);
+      if (saved.reviewMode) setReviewMode(saved.reviewMode);
+      if (saved.sowText) setSowText(saved.sowText);
+      if (saved.sowFileName) setSowFileName(saved.sowFileName);
+      if (saved.review) setReview(saved.review);
+    } catch { /* malformed/absent - ignore */ }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  useEffect(() => {
+    try {
+      window.sessionStorage.setItem(ORG_SCANNER_SESSION_KEY, JSON.stringify({
+        results, pipelineBucket, pipelinePeriod, reviewMode, sowText, sowFileName, review
+      }));
+    } catch { /* storage unavailable/full - non-critical, just skip persistence */ }
+  }, [results, pipelineBucket, pipelinePeriod, reviewMode, sowText, sowFileName, review]);
+
   async function runScan() {
     setError(null);
     setResults(null);
@@ -171,6 +201,7 @@ export default function OrgScannerPage() {
   const dloScanStatus = results?.find((r) => r.category === 'Data Lake Objects (DLOs)')?.status;
   const dloSignal = useMemo(() => (results ? computeDloVolumeSignal(results) : null), [results]);
   const footprint = useMemo(() => (results ? computeConfigFootprint(results) : null), [results]);
+  const segmentSignal = useMemo(() => (results ? extractSegmentVolumeSignal(results) : null), [results]);
   const walletRollup = useMemo(() => (results ? extractDigitalWalletRollup(results) : null), [results]);
 
   const pipelineItemKey = pipelineBucket === 'internal' ? 'internalDataPipeline' : 'externalDataPipelineBatch';
@@ -186,19 +217,19 @@ export default function OrgScannerPage() {
 
   function goToBasicCalculator() {
     if (!dloSignal) return;
-    const handoff = buildBasicHandoff(dloSignal.totalRows, pipelineBucket, pipelinePeriod);
+    const handoff = buildBasicHandoff(dloSignal.totalRows, pipelineBucket, pipelinePeriod, segmentSignal, footprint);
     try { window.sessionStorage.setItem(BASIC_HANDOFF_KEY, JSON.stringify(handoff)); } catch { /* ignore */ }
     router.push('/credit-calculator');
   }
   function goToAdvancedCalculator() {
     if (!dloSignal) return;
-    const handoff = buildAdvancedHandoff(dloSignal.totalRows, pipelineBucket, pipelinePeriod);
+    const handoff = buildAdvancedHandoff(dloSignal.totalRows, pipelineBucket, pipelinePeriod, footprint);
     try { window.sessionStorage.setItem(ADVANCED_HANDOFF_KEY, JSON.stringify(handoff)); } catch { /* ignore */ }
     router.push('/credit-calculator/advanced');
   }
   function goToFlexCredits() {
     if (!dloSignal) return;
-    const handoff = buildFlexHandoff(dloSignal.totalRows, pipelinePeriod);
+    const handoff = buildFlexHandoff(dloSignal.totalRows, pipelinePeriod, footprint);
     try { window.sessionStorage.setItem(FLEX_HANDOFF_KEY, JSON.stringify(handoff)); } catch { /* ignore */ }
     router.push('/credit-calculator?mode=flex_credits');
   }
@@ -265,7 +296,7 @@ export default function OrgScannerPage() {
 
         <div className="mb-6">
           {!connection.connected ? <SavedConnectionQuickConnect slot="primary" onConnected={setConnection} /> : null}
-          <ConnectionForm onConnected={setConnection} />
+          <ConnectionForm onConnected={setConnection} externalInfo={connection} />
         </div>
 
         {connection.connected ? (

@@ -69,8 +69,8 @@ export default function ItemCardAdvanced({ item, environment, costPerCreditUSD, 
           {item.supportsInitial ? (
             <div className={`mt-2 rounded-lg bg-${theme.color}-50 border border-${theme.color}-100 p-2`}>
               <label className="block text-[11px] font-semibold text-slate-800 mb-1">{item.initialLabel} (Day 0, one-time)</label>
-              <div className="flex items-center gap-2">
-                <div className="flex-1 min-w-0 max-w-[15rem]">
+              <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                <div className="flex-1 min-w-[9rem] max-w-[15rem]">
                   <NumberSpinner value={adv.state.itemInitials[item.key] ?? 0} onChange={(v) => adv.setItemInitial(item.key, v)} ariaLabel={`${item.label} — ${item.initialLabel}`} suffix={item.unitLabel} />
                 </div>
                 <div className="ml-auto text-right shrink-0 text-sm">
@@ -172,8 +172,8 @@ function RefreshControlledInputs({ item, adv, cfg, result, isFree }: {
 
       <div className="mt-2 rounded-lg border border-slate-200 p-2">
         <label className="block text-[11px] font-medium text-slate-700 mb-1">{volumeLabel}</label>
-        <div className="flex items-center gap-2">
-          <div className="flex-1 min-w-0 max-w-[15rem]">
+        <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+          <div className="flex-1 min-w-[9rem] max-w-[15rem]">
             <NumberSpinner value={volumePerRun} onChange={(v) => adv.setItemVolumePerRun(item.key, v)} ariaLabel={`${item.label} — ${volumeLabel}`} suffix={item.unitLabel} />
           </div>
           <div className="ml-auto text-right shrink-0 text-sm">
@@ -216,8 +216,8 @@ function LegacyPeriodInputs({ item, adv, result, costPerCreditUSD, isFree, strea
       </div>
       <div className="mt-2 rounded-lg border border-slate-200 p-2">
         <label className="block text-[11px] font-medium text-slate-700 mb-1">{item.unitLabel} {PERIOD_LABEL_PER[period]}</label>
-        <div className="flex items-center gap-2">
-          <div className="flex-1 min-w-0 max-w-[15rem]">
+        <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+          <div className="flex-1 min-w-[9rem] max-w-[15rem]">
             <NumberSpinner value={volume} onChange={(v) => adv.setLegacyVolume(item.key, v)} ariaLabel={`${item.label} volume`} suffix={item.unitLabel} />
           </div>
           <div className="ml-auto text-right shrink-0 text-sm">

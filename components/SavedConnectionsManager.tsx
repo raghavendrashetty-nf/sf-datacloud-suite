@@ -19,8 +19,12 @@ function emptyDraft(): SavedConnection {
 
 // Builds the /authorize query string from a saved connection's own Production/Sandbox/Custom
 // domain choice - same encoding OAuthConnectCard already uses, just driven from stored fields
-// instead of live radio state.
+// instead of live radio state. Once a connection has actually succeeded once, its real
+// instanceUrl is known and preferred over the original domain choice - more precise (the exact
+// org host, not just "production" generically) and still correct for a later re-auth even if
+// the connection was originally started via the generic Production/Sandbox toggle.
 function authorizeQueryForDomain(c: SavedConnection): string {
+  if (c.instanceUrl) return `loginUrl=${encodeURIComponent(c.instanceUrl)}`;
   if (c.domain === 'custom' && c.customDomain) return `loginUrl=${encodeURIComponent(c.customDomain)}`;
   return `sandbox=${c.domain === 'test'}`;
 }
@@ -55,15 +59,22 @@ async function attemptConnect(c: SavedConnection): Promise<ConnectionInfo> {
   return j.info as ConnectionInfo;
 }
 
-// Salesforce's invalid_grant "authentication failure" for the OAuth username-password grant is
-// a real, common org-side restriction (confirmed live against a real org this session) - the
-// org requires a Security Token for this kind of non-interactive API login (or blocks it
-// outright from an untrusted network), which this app cannot bypass. Surfaced as an actionable
-// hint instead of leaving the user with just Salesforce's raw error text.
+// Both of these are real Salesforce OAuth responses this app cannot bypass - surfaced as
+// actionable hints instead of leaving the user with just the raw error text:
+//  - oauth_password + invalid_grant: the org requires a Security Token for this kind of
+//    non-interactive login (or blocks it outright from an untrusted network) - confirmed live.
+//  - oauth_redirect + invalid_grant "expired access/refresh token": Salesforce's Connected App
+//    refresh-token policy expired or revoked this saved token (normal over time, not a bug) -
+//    confirmed live. There's no way to "renew" a refresh token in place; the only fix is a fresh
+//    interactive login, which is exactly what "Reconnect via OAuth Redirect" (shown alongside
+//    this error) does.
 function friendlyConnectError(e: any, authMethod: SavedConnectionAuthMethod): string {
   const raw = e?.message ?? 'Connection failed';
   if (e?.code === 'invalid_grant' && authMethod === 'oauth_password') {
     return `${raw} This usually means the org requires a Security Token for this kind of non-interactive login (or blocks it outright from this network) - try adding a Security Token above, or switch this connection's Auth Method to "OAuth Redirect" instead, which logs in through Salesforce's own page and isn't affected by this restriction.`;
+  }
+  if (e?.code === 'invalid_grant' && authMethod === 'oauth_redirect') {
+    return `${raw} The saved refresh token has expired or been revoked (Salesforce does this periodically per the Connected App's policy - not a bug here). Click "Reconnect via OAuth Redirect" to get a fresh one.`;
   }
   return raw;
 }
@@ -142,7 +153,10 @@ export default function SavedConnectionsManager() {
   function saveAndConnectOAuthRedirect() {
     if (!editing) return;
     if (!editing.name.trim()) { setError('Give this connection a name.'); return; }
-    if (!editing.clientId) { setError('Consumer Key is required to start an OAuth Redirect connection.'); return; }
+    // Only required for a first-time connect - a saved connection reconnecting after its
+    // refresh token expired can still rely on the server's shared Connected App config, same as
+    // the optional Consumer Key/Secret fields shown for that case above.
+    if (!editing.refreshToken && !editing.clientId) { setError('Consumer Key is required to start an OAuth Redirect connection.'); return; }
     upsertSavedConnection(editing);
     window.location.href = buildAuthorizeHref(editing);
   }
@@ -221,6 +235,15 @@ export default function SavedConnectionsManager() {
                   {connectingId === c.id ? 'Connecting...' : 'Test Connect'}
                 </button>
               )}
+              {/* A saved refresh token can expire or be revoked by Salesforce over time (a real,
+                  expected event, not a bug) - there's no way to "renew" one in place, only a
+                  fresh interactive login, so this stays available even after the first connect
+                  succeeded, not just before it. */}
+              {c.authMethod === 'oauth_redirect' && c.refreshToken ? (
+                <a href={buildAuthorizeHref(c)} className="text-xs font-semibold text-indigo-600 hover:text-indigo-800">
+                  Reconnect
+                </a>
+              ) : null}
               <button onClick={() => startEdit(c)} className="text-xs font-semibold text-indigo-600 hover:text-indigo-800">Edit</button>
               <button onClick={() => remove(c.id)} className="text-xs font-semibold text-rose-600 hover:text-rose-800">Delete</button>
             </div>
@@ -389,12 +412,24 @@ export default function SavedConnectionsManager() {
             </>
           ) : null}
 
+          {/* Duplicated here (not just the banner near the top of the page) since this form can
+              sit well below a long list of saved connections - without this, testing/saving
+              from here silently updates a message the user has already scrolled past. */}
+          {notice ? <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-3 text-xs text-emerald-800">{notice}</div> : null}
+          {error ? <div className="rounded-lg border border-rose-200 bg-rose-50 p-3 text-xs text-rose-700">{error}</div> : null}
+
           <div className="flex items-center justify-end gap-3 pt-2 border-t border-slate-100">
             <button onClick={() => setEditing(null)} className="text-xs font-semibold text-slate-500 hover:text-slate-800">Cancel</button>
             {editing.authMethod !== 'oauth_redirect' || editing.refreshToken ? (
               <button onClick={testConnectDraft} disabled={testingDraft}
                 className="btn-ghost text-xs py-2 px-4 disabled:opacity-60">
                 {testingDraft ? 'Testing...' : 'Test Connection'}
+              </button>
+            ) : null}
+            {editing.authMethod === 'oauth_redirect' && editing.refreshToken ? (
+              <button onClick={saveAndConnectOAuthRedirect}
+                className="btn-ghost text-xs py-2 px-4">
+                Reconnect via OAuth Redirect
               </button>
             ) : null}
             {editing.authMethod === 'oauth_redirect' && !editing.refreshToken ? (

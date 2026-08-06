@@ -77,8 +77,8 @@ export default function ItemCard({ item, environment, itemPeriod, volume, initia
 
       <div className="mt-2 rounded-lg border border-slate-200 p-2">
         <label className="block text-[11px] font-medium text-slate-700 mb-1">{primaryLabel}</label>
-        <div className="flex items-center gap-2">
-          <div className="flex-1 min-w-0 max-w-[15rem]">
+        <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+          <div className="flex-1 min-w-[9rem] max-w-[15rem]">
             <NumberSpinner value={volume} onChange={onVolumeChange} ariaLabel={`${item.label} \u2014 ${primaryLabel}`} suffix={suffix} />
           </div>
           <div className="ml-auto text-right shrink-0 text-sm">
@@ -94,8 +94,8 @@ export default function ItemCard({ item, environment, itemPeriod, volume, initia
       {item.supportsInitial ? (
         <div className={`mt-2 rounded-lg bg-${theme.color}-50 border border-${theme.color}-100 p-2`}>
           <label className="block text-[11px] font-semibold text-slate-800 mb-1">{item.initialLabel} (Day 0, one-time)</label>
-          <div className="flex items-center gap-2">
-            <div className="flex-1 min-w-0 max-w-[15rem]">
+          <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+            <div className="flex-1 min-w-[9rem] max-w-[15rem]">
               <NumberSpinner value={initial} onChange={onInitialChange} ariaLabel={`${item.label} \u2014 ${item.initialLabel}`} suffix={item.unitLabel} />
             </div>
             <div className="ml-auto text-right shrink-0 text-sm">

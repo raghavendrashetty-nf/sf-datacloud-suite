@@ -55,6 +55,31 @@ export function computeConfigFootprint(results: ScanCategoryResult[]): ConfigFoo
   };
 }
 
+export interface SegmentVolumeSignal { totalRows: number; segmentCount: number; matchedField: string }
+
+// Segments are charged by rows EVALUATED when published (segmentRowsProcessed in the rate card),
+// not by how many segments exist - a count of "1 segment" can't be honestly turned into a row
+// volume without knowing that segment's actual population (Salesforce's own Segment detail page
+// shows this as "Segment Population"). fetchSegments() passes the /ssot/segments response
+// through unmapped (confirmed in lib/dataCloudClient.ts), so whatever population field Salesforce
+// returns is already present on each raw item - just not under a name this app assumed. Detected
+// defensively here (same pattern as extractDigitalWalletRollup below) rather than guessed at, and
+// returns null - contributing nothing to the prefill - if no matching field is found, rather than
+// fabricate a number.
+export function extractSegmentVolumeSignal(results: ScanCategoryResult[]): SegmentVolumeSignal | null {
+  const items = results.find((r) => r.category === 'Segments')?.items ?? [];
+  if (items.length === 0) return null;
+  const sample = items[0] as Record<string, unknown>;
+  const matchedField = Object.keys(sample).find((k) => /population|member.*count|record.*count|row.*count/i.test(k) && typeof sample[k] === 'number');
+  if (!matchedField) return null;
+  let totalRows = 0;
+  for (const it of items) {
+    const v = (it as Record<string, unknown>)[matchedField];
+    if (typeof v === 'number') totalRows += v;
+  }
+  return { totalRows, segmentCount: items.length, matchedField };
+}
+
 export interface WalletUsageRollup {
   byCategory: { category: string; total: number }[];
   grandTotal: number;
@@ -112,13 +137,31 @@ export const ADVANCED_HANDOFF_KEY = 'sfdc.calculatorAdvanced.suggestedInputs.v1'
 
 export interface BasicHandoff { itemVolumes: Record<string, number>; itemPeriods: Record<string, Period>; note: string; }
 
-export function buildBasicHandoff(totalRows: number, bucket: PipelineBucket, period: Period): BasicHandoff {
+// segmentSignal/footprint are optional so every existing call site (which only ever passed the
+// first three args) keeps compiling and behaving the same - they just won't get the additional
+// Segment/Calculated Insight handling below without being updated to pass them.
+export function buildBasicHandoff(
+  totalRows: number, bucket: PipelineBucket, period: Period,
+  segmentSignal?: SegmentVolumeSignal | null, footprint?: ConfigFootprint | null
+): BasicHandoff {
   const key = bucket === 'internal' ? 'internalDataPipeline' : 'externalDataPipelineBatch';
-  return {
-    itemVolumes: { [key]: totalRows },
-    itemPeriods: { [key]: period },
-    note: `Prefilled from Org Scanner: ${totalRows.toLocaleString()} rows currently in your Data Lake Objects, assumed to refresh once per ${period}. This is a starting point, not a measured rate - adjust the volume/period to match your actual pipeline design.`
-  };
+  const itemVolumes: Record<string, number> = { [key]: totalRows };
+  const itemPeriods: Record<string, Period> = { [key]: period };
+  const noteParts = [`Prefilled from Org Scanner: ${totalRows.toLocaleString()} rows currently in your Data Lake Objects, assumed to refresh once per ${period}.`];
+
+  if (segmentSignal) {
+    itemVolumes.segmentRowsProcessed = segmentSignal.totalRows;
+    itemPeriods.segmentRowsProcessed = period;
+    noteParts.push(`Also prefilled "Segment Rows Processed" with ${segmentSignal.totalRows.toLocaleString()} rows across ${segmentSignal.segmentCount} segment(s) (summed from each segment's "${segmentSignal.matchedField}" field), assumed to publish once per ${period}.`);
+  } else if (footprint && footprint.segments > 0) {
+    noteParts.push(`This org also has ${footprint.segments} segment(s) configured, but the scan couldn't find a population field on them to estimate row volume - add "Segment Rows Processed" (Activation phase) manually if they're actively publishing.`);
+  }
+  if (footprint && footprint.calculatedInsights > 0) {
+    noteParts.push(`This org also has ${footprint.calculatedInsights} Calculated Insight(s) configured - their actual row throughput isn't available from the scan (that's measured at run time, not part of the metadata definition), so add "Calculated Insights - Batch/Streaming" (Insights phase) manually if you want to include them.`);
+  }
+  noteParts.push('This is a starting point, not a measured rate - adjust the volume/period to match your actual pipeline design.');
+
+  return { itemVolumes, itemPeriods, note: noteParts.join(' ') };
 }
 
 export interface AdvancedHandoff {
@@ -128,9 +171,19 @@ export interface AdvancedHandoff {
   note: string;
 }
 
-export function buildAdvancedHandoff(totalRows: number, bucket: PipelineBucket, period: Period): AdvancedHandoff {
+// footprint is optional for the same backward-compat reason as buildBasicHandoff above. Unlike
+// Basic, Advanced's handoff shape only carries a single pipeline/legacy item - there's no second
+// slot to prefill a Segment volume into even when one is available - so this only adds an
+// informational note pointing at what to add manually, rather than silently omitting real
+// configured objects (segments, calculated insights) the user might not know aren't reflected.
+export function buildAdvancedHandoff(totalRows: number, bucket: PipelineBucket, period: Period, footprint?: ConfigFootprint | null): AdvancedHandoff {
   const { frequency, manualRunsPerYear } = PERIOD_TO_FREQUENCY[period];
-  const note = `Prefilled from Org Scanner: ${totalRows.toLocaleString()} rows currently in your Data Lake Objects, assumed to refresh once per ${period}. This is a starting point, not a measured rate - adjust the volume/mode/frequency to match your actual pipeline design.`;
+  const noteParts = [`Prefilled from Org Scanner: ${totalRows.toLocaleString()} rows currently in your Data Lake Objects, assumed to refresh once per ${period}.`];
+  if (footprint && (footprint.segments > 0 || footprint.calculatedInsights > 0)) {
+    noteParts.push(`This org also has ${footprint.segments} segment(s) and ${footprint.calculatedInsights} Calculated Insight(s) configured - their row volumes aren't available from the scan and aren't prefilled here, so add "Segment Rows Processed" / "Calculated Insights" pipelines manually if you want to include them.`);
+  }
+  noteParts.push('This is a starting point, not a measured rate - adjust the volume/mode/frequency to match your actual pipeline design.');
+  const note = noteParts.join(' ');
   if (bucket === 'external') {
     return {
       kind: 'pipeline',
@@ -150,12 +203,19 @@ export interface FlexHandoff { itemKey: string; volume: number; period: Period; 
 
 // Flex Credits' "Data 360 Prep" is a single, unified ingestion/prep rate - unlike Credit-Based
 // Consumption there's no internal-vs-external connector split to choose here, so this handoff
-// needs no bucket parameter at all.
-export function buildFlexHandoff(totalRows: number, period: Period): FlexHandoff {
+// needs no bucket parameter at all. Same single-item shape limitation as buildAdvancedHandoff -
+// a Segment/Calculated Insight signal can't be prefilled into a second item here, so it's
+// surfaced as a note instead of silently going unmentioned.
+export function buildFlexHandoff(totalRows: number, period: Period, footprint?: ConfigFootprint | null): FlexHandoff {
+  const noteParts = [`Prefilled from Org Scanner: ${totalRows.toLocaleString()} rows currently in your Data Lake Objects, assumed to refresh once per ${period}, applied to Data 360 Prep.`];
+  if (footprint && (footprint.segments > 0 || footprint.calculatedInsights > 0)) {
+    noteParts.push(`This org also has ${footprint.segments} segment(s) configured - their row volume isn't available from the scan, so add "Data 360 Segmentation" manually if you want to include it. (Calculated Insights have no dedicated Flex Credits rate item.)`);
+  }
+  noteParts.push('This is a starting point, not a measured rate - adjust the volume/period to match your actual pipeline design.');
   return {
     itemKey: 'flexDataPrep',
     volume: totalRows,
     period,
-    note: `Prefilled from Org Scanner: ${totalRows.toLocaleString()} rows currently in your Data Lake Objects, assumed to refresh once per ${period}, applied to Data 360 Prep. This is a starting point, not a measured rate - adjust the volume/period to match your actual pipeline design.`
+    note: noteParts.join(' ')
   };
 }
