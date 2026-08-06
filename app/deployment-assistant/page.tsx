@@ -502,7 +502,7 @@ export default function DeploymentAssistantPage() {
 
         <div className="mb-6">
           {!sourceConnection.connected ? <SavedConnectionQuickConnect slot="primary" onConnected={setSourceConnection} /> : null}
-          <ConnectionForm onConnected={setSourceConnection} title="Connect Source Org" />
+          <ConnectionForm onConnected={setSourceConnection} title="Connect Source Org" externalInfo={sourceConnection} />
         </div>
 
         {sourceConnection.connected ? (
@@ -654,7 +654,7 @@ export default function DeploymentAssistantPage() {
               <ConnectionForm onConnected={setTargetConnection} apiEndpoint="/api/deployment/target-connection"
                 rememberKey="sfdc.targetConnection.remember.v1"
                 additionalRememberKeys={[OAUTH_PASSWORD_REMEMBER_KEY, OAUTH_REDIRECT_REMEMBER_KEY]}
-                title="Connect Target Org" />
+                title="Connect Target Org" externalInfo={targetConnection} />
             ) : (
               <>
                 <SavedConnectionQuickConnect slot="target" onConnected={setTargetConnection} />
@@ -679,7 +679,7 @@ export default function DeploymentAssistantPage() {
                 ) : null}
                 {targetConnectMode === 'legacy_password' ? (
                   <ConnectionForm onConnected={setTargetConnection} apiEndpoint="/api/deployment/target-connection"
-                    rememberKey="sfdc.targetConnection.remember.v1" title="Connect Target Org (Username & Password, SOAP - older orgs only)" />
+                    rememberKey="sfdc.targetConnection.remember.v1" title="Connect Target Org (Username & Password, SOAP - older orgs only)" externalInfo={targetConnection} />
                 ) : null}
               </>
             )}

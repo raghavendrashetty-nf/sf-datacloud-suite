@@ -367,7 +367,7 @@ export default function DataReadinessPage() {
         {system === 'salesforce' && needsConnection ? (
           <section>
             <h2 className="text-lg font-semibold text-slate-900 mb-3">2. Connect to Salesforce</h2>
-            <ConnectionForm onConnected={(info) => setSfConnection(info)} />
+            <ConnectionForm onConnected={(info) => setSfConnection(info)} externalInfo={sfConnection} />
           </section>
         ) : null}
 

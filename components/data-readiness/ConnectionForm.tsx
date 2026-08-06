@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { ConnectionInfo, SFConnectionConfig } from '@/lib/dataReadiness';
 
 interface Props {
@@ -15,6 +15,15 @@ interface Props {
   // those too - otherwise disconnecting wouldn't actually forget a connection remembered via
   // one of the other modes.
   additionalRememberKeys?: string[];
+  // The parent page's own connection state, if it tracks one (most callers do, since sibling
+  // connect options - Saved Connections, OAuth password/redirect cards - all report success
+  // through the shared onConnected callback into that same parent state). Confirmed live: without
+  // this, ConnectionForm's mount-time status check only ever runs ONCE and has no way to learn a
+  // SIBLING component connected afterward, so it kept showing its own stale "not connected" login
+  // form even while the rest of the page (driven by the parent's now-true state) showed connected
+  // content - the exact page simultaneously showing both an empty login form and post-connect
+  // sections. Syncing from this prop whenever it flips to connected fixes that at the source.
+  externalInfo?: ConnectionInfo;
 }
 type DomainChoice = 'login' | 'test' | 'custom';
 
@@ -42,7 +51,8 @@ export default function ConnectionForm({
   apiEndpoint = '/api/data-readiness/connection',
   rememberKey = 'sfdc.salesforceConnection.remember.v1',
   title = 'Connect to Salesforce',
-  additionalRememberKeys
+  additionalRememberKeys,
+  externalInfo
 }: Props) {
   const [info, setInfo] = useState<ConnectionInfo>({ connected: false });
   const [loadingStatus, setLoadingStatus] = useState(true);
@@ -58,6 +68,8 @@ export default function ConnectionForm({
   const [showToken, setShowToken] = useState(false);
   const [connecting, setConnecting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const infoRef = useRef(info);
+  useEffect(() => { infoRef.current = info; }, [info]);
 
   // True if THIS component's own remember key has something, or any of the sibling connect
   // modes' remember keys do (they use their own separate localStorage entries/shapes entirely -
@@ -91,10 +103,17 @@ export default function ConnectionForm({
     }
   }
 
+  // Stay in sync when a SIBLING connect option (Saved Connections, an OAuth card, etc.) connects
+  // this same logical slot - see the externalInfo prop doc above for why this is needed at all.
+  useEffect(() => {
+    if (externalInfo?.connected) setInfo(externalInfo);
+  }, [externalInfo]);
+
   useEffect(() => {
     fetch(apiEndpoint).then((r) => r.json()).then(async (j) => {
       if (j?.info?.connected) { setInfo(j.info); onConnected?.(j.info); return; }
       const remembered = readRemembered(rememberKey);
+      let reconnected = false;
       if (remembered) {
         setUsername(remembered.username); setSecurityToken(remembered.securityToken);
         setDomainChoice(remembered.domainChoice); setInstanceUrl(remembered.instanceUrl); setCustomDomain(remembered.customDomain);
@@ -105,9 +124,24 @@ export default function ConnectionForm({
           { username: remembered.username, password: remembered.password, securityToken: remembered.securityToken || undefined, domain, instanceUrl: remembered.instanceUrl || undefined },
           true
         );
+        reconnected = ok;
         if (!ok) { clearRemembered(rememberKey); setError('Saved credentials no longer work - please reconnect.'); }
         setAutoReconnecting(false);
       }
+      // The server-verified status came back NOT connected (and any auto-reconnect attempt above
+      // didn't succeed either) - if the parent's own state (or this component's externalInfo prop)
+      // still believes it's connected (e.g. the server-memory session died - process restart, TTL,
+      // redeploy - after a real earlier connect), that belief is now stale. Report the downgrade
+      // upward so the parent falls back to showing its "not connected" UI (Saved Connections
+      // picker, connect mode tabs, etc.) instead of leaving this form permanently stuck rendering a
+      // blank login screen behind a parent that thinks everything's fine. Confirmed live: without
+      // this, a died server-side session left the UI in a dead end with no way to reconnect via
+      // anything other than manually filling this form.
+      // Guarded by infoRef (not the closed-over `info`) because this component can be mounted from
+      // the very start (e.g. the source-org form) alongside a sibling Saved Connections picker - if
+      // that sibling's real connect wins the race and lands first, infoRef.current.connected is
+      // already true by the time this slower status check resolves, and this must not stomp it.
+      if (!reconnected && !infoRef.current.connected) onConnected?.({ connected: false });
     }).catch(() => {}).finally(() => setLoadingStatus(false));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [apiEndpoint, rememberKey]);
